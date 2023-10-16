@@ -1,6 +1,6 @@
 [package]
 name = "ssml"
-version = "0.0.1"
+version = "0.0.2"
 description = "Utilities for working with Speech Synthesis Markup Language documents"
 license = "Apache-2.0"
 authors = [ "Carson M <carson@pyke.io>" ]
