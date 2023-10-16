@@ -20,7 +20,7 @@ pub enum AudioRepeat {
 
 /// An SSML `<audio />` element. [`Audio`] supports the insertion of recorded audio files and the insertion of other
 /// audio formats in conjunction with synthesized speech output.
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Audio {
 	src: String,
 	desc: Option<String>,

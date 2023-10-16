@@ -1,6 +1,6 @@
 use std::{error::Error, io::Write};
 
-use crate::{util, Audio, Flavor, Serialize, Text};
+use crate::{util, Audio, Flavor, Meta, Serialize, Text, Voice};
 
 macro_rules! el {
 	(
@@ -8,7 +8,7 @@ macro_rules! el {
 		pub enum $name:ident {
 			$(
 				$(#[$innermeta:meta])*
-				$variant:ident($inner:ident)
+				$variant:ident($inner:ty)
 			),*
 		}
 	) => {
@@ -37,10 +37,12 @@ macro_rules! el {
 }
 
 el! {
-	#[derive(Clone)]
+	#[derive(Debug, Clone)]
 	pub enum SpeakableElement {
 		Text(Text),
-		Audio(Audio)
+		Audio(Audio),
+		Voice(Voice),
+		Meta(Meta)
 		// Break(BreakElement),
 		// Emphasis(EmphasisElement),
 		// Lang(LangElement),
@@ -63,7 +65,7 @@ impl<T: ToString> From<T> for SpeakableElement {
 }
 
 /// The root element of an SSML document.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct Speak {
 	elements: Vec<SpeakableElement>,
 	marks: (Option<String>, Option<String>),
@@ -134,7 +136,7 @@ impl Serialize for Speak {
 
 		// Include `mstts` namespace for ACSS.
 		if flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
-			util::write_attr(writer, "xmlns:mstts", "https://www.w3.org/2001/mstts")?;
+			util::write_attr(writer, "xmlns:mstts", "http://www.w3.org/2001/mstts")?;
 		}
 
 		if let Some(start_mark) = &self.marks.0 {

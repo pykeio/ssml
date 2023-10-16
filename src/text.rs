@@ -3,7 +3,7 @@ use std::{error::Error, io::Write};
 use crate::{Flavor, Serialize};
 
 /// A non-marked-up string of text for use as a spoken element.
-#[derive(Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Text(pub String);
 
 impl<T: ToString> From<T> for Text {

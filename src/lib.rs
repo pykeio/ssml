@@ -25,17 +25,20 @@ use std::{error::Error, fmt::Debug, io::Write};
 
 mod audio;
 mod error;
+pub mod mstts;
 mod speak;
 mod text;
 mod unit;
 mod util;
+mod voice;
 
 pub(crate) use self::error::{error, GenericError};
 pub use self::{
 	audio::{audio, Audio, AudioRepeat},
 	speak::{speak, Speak, SpeakableElement},
 	text::{text, Text},
-	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError}
+	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
+	voice::{voice, Voice, VoiceConfig, VoiceGender}
 };
 
 /// Vendor-specific flavor of SSML. Specifying this can be used to enable compatibility checks & add additional
@@ -73,5 +76,18 @@ pub trait Serialize {
 		let mut write = Vec::new();
 		self.serialize(&mut write, flavor)?;
 		Ok(std::str::from_utf8(&write)?.to_owned())
+	}
+}
+
+/// A [`SpeakableElement`] that outputs a simple string.
+///
+/// It differs from [`Text`] in that the contents of `Meta` are not escaped, meaning `Meta` can be used to write raw
+/// XML into the document.
+#[derive(Debug, Clone)]
+pub struct Meta(pub String);
+
+impl Serialize for Meta {
+	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> Result<(), Box<dyn Error>> {
+		Ok(writer.write_all(self.0.as_bytes())?)
 	}
 }
