@@ -1,0 +1,10 @@
+[package]
+name = "ssml"
+version = "0.0.1"
+description = "Utilities for working with Speech Synthesis Markup Language documents"
+license = "Apache-2.0"
+authors = [ "Carson M <carson@pyke.io>" ]
+edition = "2021"
+repository = "https://github.com/pykeio/ssml"
+
+[dependencies]
