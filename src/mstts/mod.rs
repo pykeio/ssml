@@ -24,7 +24,7 @@ pub trait MicrosoftVoiceExt {
 	///
 	/// ```
 	/// # use ssml::{Flavor, mstts::{MicrosoftVoiceExt, MicrosoftViseme}, Serialize};
-	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # fn main() -> anyhow::Result<()> {
 	/// let doc = ssml::Speak::new(
 	/// 	Some("en-US"),
 	/// 	[ssml::Voice::new(

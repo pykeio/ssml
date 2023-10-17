@@ -11,7 +11,7 @@
 //!
 //! ```
 //! use ssml::Serialize;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> anyhow::Result<()> {
 //! # let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 //! let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
 //! assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world! </speak>"#);
@@ -21,7 +21,7 @@
 
 #![allow(clippy::tabs_in_doc_comments)]
 
-use std::{error::Error, fmt::Debug, io::Write};
+use std::{fmt::Debug, io::Write};
 
 mod audio;
 mod error;
@@ -69,10 +69,10 @@ pub enum Flavor {
 /// Trait to support serializing SSML elements.
 pub trait Serialize {
 	/// Serialize this SSML element into a [`Write`]r.
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> Result<(), Box<dyn Error>>;
+	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()>;
 
 	/// Serialize this SSML element into a string.
-	fn serialize_to_string(&self, flavor: Flavor) -> Result<String, Box<dyn Error>> {
+	fn serialize_to_string(&self, flavor: Flavor) -> anyhow::Result<String> {
 		let mut write = Vec::new();
 		self.serialize(&mut write, flavor)?;
 		Ok(std::str::from_utf8(&write)?.to_owned())
@@ -87,7 +87,7 @@ pub trait Serialize {
 pub struct Meta(pub String);
 
 impl Serialize for Meta {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
 		Ok(writer.write_all(self.0.as_bytes())?)
 	}
 }

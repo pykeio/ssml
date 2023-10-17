@@ -1,4 +1,4 @@
-use std::{error::Error, io::Write};
+use std::io::Write;
 
 use crate::{
 	speak::SpeakableElement,
@@ -146,7 +146,7 @@ impl Audio {
 }
 
 impl Serialize for Audio {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
 		writer.write_all(b"<audio")?;
 		if !self.src.is_empty() {
 			util::write_attr(writer, "src", &self.src)?;

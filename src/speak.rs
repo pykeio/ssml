@@ -1,4 +1,4 @@
-use std::{error::Error, io::Write};
+use std::io::Write;
 
 use crate::{util, Audio, Flavor, Meta, Serialize, Text, Voice};
 
@@ -27,7 +27,7 @@ macro_rules! el {
 		})*
 
 		impl $crate::Serialize for $name {
-			fn serialize<W: std::io::Write>(&self, writer: &mut W, flavor: $crate::Flavor) -> std::result::Result<(), std::boxed::Box<(dyn std::error::Error + 'static)>> {
+			fn serialize<W: std::io::Write>(&self, writer: &mut W, flavor: $crate::Flavor) -> anyhow::Result<()> {
 				match self {
 					$($name::$variant(inner) => inner.serialize(writer, flavor),)*
 				}
@@ -103,7 +103,7 @@ impl Speak {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # fn main() -> anyhow::Result<()> {
 	/// let mut doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 	/// doc = doc.with_elements(["This is an SSML document."]);
 	///
@@ -121,7 +121,7 @@ impl Speak {
 }
 
 impl Serialize for Speak {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
 		writer.write_all(b"<speak")?;
 		if flavor == Flavor::Generic || flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
 			util::write_attr(writer, "version", "1.0")?;
@@ -164,7 +164,7 @@ impl Serialize for Speak {
 ///
 /// ```
 /// # use ssml::Serialize;
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> anyhow::Result<()> {
 /// let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 ///
 /// let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;

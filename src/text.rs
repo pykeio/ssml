@@ -1,4 +1,4 @@
-use std::{error::Error, io::Write};
+use std::io::Write;
 
 use crate::{Flavor, Serialize};
 
@@ -13,7 +13,7 @@ impl<T: ToString> From<T> for Text {
 }
 
 impl Serialize for Text {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
 		writer.write_all(self.0.as_bytes())?;
 		writer.write_all(b" ")?;
 		Ok(())

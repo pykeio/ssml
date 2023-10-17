@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, io::Write};
+use std::{fmt::Display, io::Write};
 
 use crate::{util, Flavor, Serialize, SpeakableElement};
 
@@ -52,7 +52,7 @@ impl<S: ToString> From<S> for VoiceConfig {
 }
 
 impl Serialize for VoiceConfig {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
 		if let Some(gender) = &self.gender {
 			util::write_attr(writer, "gender", gender.to_string())?;
 		}
@@ -81,7 +81,7 @@ impl Voice {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # fn main() -> anyhow::Result<()> {
 	/// let doc = ssml::Speak::new(None, [ssml::Voice::new("en-US-Neural2-F", ["Hello, world!"])]);
 	///
 	/// assert_eq!(
@@ -102,7 +102,7 @@ impl Voice {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # fn main() -> anyhow::Result<()> {
 	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
 	/// voice = voice.with_elements(["This is an SSML document."]);
 	/// let doc = ssml::Speak::new(None, [voice]);
@@ -132,7 +132,7 @@ impl Voice {
 }
 
 impl Serialize for Voice {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> Result<(), Box<dyn Error>> {
+	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
 		writer.write_all(b"<voice")?;
 		self.config.serialize(writer, flavor)?;
 		writer.write_all(b">")?;
@@ -148,7 +148,7 @@ impl Serialize for Voice {
 ///
 /// ```
 /// # use ssml::{Flavor, Serialize};
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> anyhow::Result<()> {
 /// let doc = ssml::speak(None, [ssml::voice("en-US-Neural2-F", ["Hello, world!"])]);
 ///
 /// assert_eq!(
