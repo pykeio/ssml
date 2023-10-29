@@ -14,7 +14,7 @@
 //! # fn main() -> anyhow::Result<()> {
 //! # let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 //! let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-//! assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world! </speak>"#);
+//! assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
 //! # Ok(())
 //! # }
 //! ```
@@ -24,18 +24,21 @@
 use std::{fmt::Debug, io::Write};
 
 mod audio;
+mod custom;
 mod error;
 pub mod mstts;
 mod speak;
 mod text;
 mod unit;
-mod util;
+pub mod util;
+pub mod visit;
+pub mod visit_mut;
 mod voice;
 
 pub(crate) use self::error::{error, GenericError};
 pub use self::{
 	audio::{audio, Audio, AudioRepeat},
-	speak::{speak, Speak, SpeakableElement},
+	speak::{speak, Element, Speak},
 	text::{text, Text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
 	voice::{voice, Voice, VoiceConfig, VoiceGender}
@@ -44,13 +47,14 @@ pub use self::{
 /// Vendor-specific flavor of SSML. Specifying this can be used to enable compatibility checks & add additional
 /// metadata required by certain services.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Flavor {
 	/// Generic SSML.
 	///
 	/// This skips any compatibility checks and assumes all elements are supported.
 	#[default]
 	Generic,
-	/// Microsoft Azure Cognitive Speech Services (ACSS) flavored SSML.
+	/// Microsoft Azure Cognitive Speech Services (ACSS / MSTTS) flavored SSML.
 	///
 	/// Selecting this flavor will namely add the proper `xmlns` to the XML document, which is required by ACSS.
 	MicrosoftAzureCognitiveSpeechServices,
@@ -79,15 +83,44 @@ pub trait Serialize {
 	}
 }
 
-/// A [`SpeakableElement`] that outputs a simple string.
+/// An [`Element`] that outputs a string of XML.
 ///
 /// It differs from [`Text`] in that the contents of `Meta` are not escaped, meaning `Meta` can be used to write raw
 /// XML into the document.
 #[derive(Debug, Clone)]
-pub struct Meta(pub String);
+pub struct Meta {
+	raw: String,
+	name: Option<String>,
+	restrict_flavor: Option<Vec<Flavor>>
+}
+
+impl Meta {
+	pub fn new(xml: impl ToString) -> Self {
+		Meta {
+			raw: xml.to_string(),
+			name: None,
+			restrict_flavor: None
+		}
+	}
+
+	pub fn with_name(mut self, name: impl ToString) -> Self {
+		self.name = Some(name.to_string());
+		self
+	}
+
+	pub fn with_restrict_flavor(mut self, flavors: impl IntoIterator<Item = Flavor>) -> Self {
+		self.restrict_flavor = Some(flavors.into_iter().collect());
+		self
+	}
+}
 
 impl Serialize for Meta {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
-		Ok(writer.write_all(self.0.as_bytes())?)
+	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
+		if let Some(flavors) = self.restrict_flavor.as_ref() {
+			if !flavors.iter().any(|f| f == &flavor) {
+				anyhow::bail!("{} cannot be used with {flavor:?}", if let Some(name) = &self.name { name } else { "this meta element" });
+			}
+		}
+		Ok(writer.write_all(self.raw.as_bytes())?)
 	}
 }

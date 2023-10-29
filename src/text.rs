@@ -14,8 +14,7 @@ impl<T: ToString> From<T> for Text {
 
 impl Serialize for Text {
 	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
-		writer.write_all(util::escape_xml(&self.0).as_bytes())?;
-		writer.write_all(b" ")?;
+		writer.write_all(util::escape(&self.0).as_bytes())?;
 		Ok(())
 	}
 }
@@ -32,7 +31,7 @@ mod tests {
 
 	#[test]
 	fn text_escapes() -> anyhow::Result<()> {
-		assert_eq!(text("One & two").serialize_to_string(Flavor::Generic)?, "One &amp; two ");
+		assert_eq!(text("One & two").serialize_to_string(Flavor::Generic)?, "One &amp; two");
 		Ok(())
 	}
 }

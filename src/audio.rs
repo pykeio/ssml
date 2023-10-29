@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::{
-	speak::SpeakableElement,
+	speak::Element,
 	unit::{Decibels, TimeDesignation},
 	util, Flavor, Serialize
 };
@@ -18,13 +18,13 @@ pub enum AudioRepeat {
 	Duration(TimeDesignation)
 }
 
-/// An SSML `<audio />` element. [`Audio`] supports the insertion of recorded audio files and the insertion of other
-/// audio formats in conjunction with synthesized speech output.
-#[derive(Debug, Default, Clone)]
+/// [`Audio`] supports the insertion of recorded audio files and the insertion of other audio formats in conjunction
+/// with synthesized speech output.
+#[derive(Clone, Debug, Default)]
 pub struct Audio {
 	src: String,
 	desc: Option<String>,
-	alternate: Vec<SpeakableElement>,
+	alternate: Vec<Element>,
 	clip: (Option<TimeDesignation>, Option<TimeDesignation>),
 	repeat: Option<AudioRepeat>,
 	sound_level: Option<Decibels>,
@@ -35,7 +35,7 @@ impl Audio {
 	/// Creates a new [`Audio`] element with an audio source URI.
 	///
 	/// ```
-	/// ssml::Audio::new("https://example.com/Congratulations_You_Won.wav");
+	/// ssml::audio("https://example.com/Congratulations_You_Won.wav");
 	/// ```
 	pub fn new(src: impl ToString) -> Self {
 		Audio {
@@ -50,10 +50,9 @@ impl Audio {
 	/// See also [`Audio::with_desc`] to provide an accessible description for this audio element.
 	///
 	/// ```
-	/// # use ssml::Audio;
-	/// Audio::new("cat_purr.ogg").with_alternate(["PURR (sound didn't load)"]);
+	/// ssml::audio("cat_purr.ogg").with_alternate(["PURR (sound didn't load)"]);
 	/// ```
-	pub fn with_alternate<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
+	pub fn with_alternate<S: Into<Element>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
 		self.alternate.extend(elements.into_iter().map(|f| f.into()));
 		self
 	}
@@ -61,8 +60,7 @@ impl Audio {
 	/// Sets an accessible description for this audio element.
 	///
 	/// ```
-	/// # use ssml::Audio;
-	/// Audio::new("cat_purr.ogg").with_desc("a purring cat");
+	/// ssml::audio("cat_purr.ogg").with_desc("a purring cat");
 	/// ```
 	pub fn with_desc(mut self, desc: impl ToString) -> Self {
 		self.desc = Some(desc.to_string());
@@ -72,9 +70,8 @@ impl Audio {
 	/// Specify an offset from the beginning and to the end of which to clip this audio's duration to.
 	///
 	/// ```
-	/// # use ssml::Audio;
 	/// // Play the sound starting from 0.25s, and stop at 0.75s, for a total duration of 0.5s.
-	/// Audio::new("cat_purr.ogg").with_clip("0.25s", "750ms");
+	/// ssml::audio("cat_purr.ogg").with_clip("0.25s", "750ms");
 	/// ```
 	pub fn with_clip(mut self, begin: impl Into<TimeDesignation>, end: impl Into<TimeDesignation>) -> Self {
 		self.clip = (Some(begin.into()), Some(end.into()));
@@ -84,9 +81,8 @@ impl Audio {
 	/// Specify an offset from the beginning of the audio to start playback.
 	///
 	/// ```
-	/// # use ssml::Audio;
 	/// // maybe skip some silence at the beginning
-	/// Audio::new("cat_purr.ogg").with_clip_begin("0.15s");
+	/// ssml::audio("cat_purr.ogg").with_clip_begin("0.15s");
 	/// ```
 	pub fn with_clip_begin(mut self, begin: impl Into<TimeDesignation>) -> Self {
 		self.clip.0 = Some(begin.into());
@@ -96,9 +92,8 @@ impl Audio {
 	/// Specify an offset from the beginning of the audio to end playback.
 	///
 	/// ```
-	/// # use ssml::Audio;
 	/// // maybe skip some silence at the end
-	/// Audio::new("cat_purr.ogg").with_clip_begin("0.75s");
+	/// ssml::audio("cat_purr.ogg").with_clip_begin("0.75s");
 	/// ```
 	pub fn with_clip_end(mut self, end: impl Into<TimeDesignation>) -> Self {
 		self.clip.1 = Some(end.into());
@@ -108,11 +103,10 @@ impl Audio {
 	/// Repeat this audio source for a set amount of times, or for a set duration. See [`AudioRepeat`].
 	///
 	/// ```
-	/// # use ssml::{Audio, AudioRepeat};
 	/// // Play the beep sound effect 3 times
-	/// Audio::new("beep.ogg").with_repeat(AudioRepeat::Times(3.0));
+	/// ssml::audio("beep.ogg").with_repeat(ssml::AudioRepeat::Times(3.0));
 	/// // Happy kitty!
-	/// Audio::new("cat_purr.ogg").with_repeat(AudioRepeat::Duration("30s".into()));
+	/// ssml::audio("cat_purr.ogg").with_repeat(ssml::AudioRepeat::Duration("30s".into()));
 	/// ```
 	pub fn with_repeat(mut self, repeat: AudioRepeat) -> Self {
 		self.repeat = Some(repeat);
@@ -124,8 +118,7 @@ impl Audio {
 	/// the volume, and likewise `+6.0dB` will play the audio at twice the volume.
 	///
 	/// ```
-	/// # use ssml::Audio;
-	/// Audio::new("cat_meow.ogg").with_sound_level("+6.0dB");
+	/// ssml::audio("cat_meow.ogg").with_sound_level("+6.0dB");
 	/// ```
 	pub fn with_sound_level(mut self, db: impl Into<Decibels>) -> Self {
 		self.sound_level = Some(db.into());
@@ -135,13 +128,22 @@ impl Audio {
 	/// Specify the speed at which to play the audio clip (where `1.0` is normal speed).
 	///
 	/// ```
-	/// # use ssml::{Audio, AudioRepeat};
 	/// // panic beeping at 2x speed
-	/// Audio::new("beep.ogg").with_repeat(AudioRepeat::Times(12.0)).with_speed(2.0);
+	/// ssml::audio("beep.ogg").with_repeat(ssml::AudioRepeat::Times(12.0)).with_speed(2.0);
 	/// ```
 	pub fn with_speed(mut self, speed: f32) -> Self {
 		self.speed = Some(speed);
 		self
+	}
+
+	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
+	pub fn alternate(&self) -> &[Element] {
+		&self.alternate
+	}
+
+	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
+	pub fn alternate_mut(&mut self) -> &mut [Element] {
+		&mut self.alternate
 	}
 }
 
@@ -187,11 +189,9 @@ impl Serialize for Audio {
 
 		writer.write_all(b">")?;
 		if let Some(desc) = &self.desc {
-			writer.write_fmt(format_args!("<desc>{}</desc>", util::escape_xml(desc)))?;
+			writer.write_fmt(format_args!("<desc>{}</desc>", util::escape(desc)))?;
 		}
-		for el in &self.alternate {
-			el.serialize(writer, flavor)?;
-		}
+		util::serialize_elements(writer, &self.alternate, flavor)?;
 		writer.write_all(b"</audio>")?;
 
 		Ok(())

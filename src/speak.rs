@@ -1,6 +1,6 @@
-use std::io::Write;
+use std::{fmt::Debug, io::Write};
 
-use crate::{util, Audio, Flavor, Meta, Serialize, Text, Voice};
+use crate::{custom::CustomElement, util, Audio, Flavor, Meta, Serialize, Text, Voice};
 
 macro_rules! el {
 	(
@@ -37,12 +37,14 @@ macro_rules! el {
 }
 
 el! {
-	#[derive(Debug, Clone)]
-	pub enum SpeakableElement {
+	#[derive(Clone, Debug)]
+	#[non_exhaustive]
+	pub enum Element {
 		Text(Text),
 		Audio(Audio),
 		Voice(Voice),
-		Meta(Meta)
+		Meta(Meta),
+		Custom(Box<dyn CustomElement>)
 		// Break(BreakElement),
 		// Emphasis(EmphasisElement),
 		// Lang(LangElement),
@@ -58,32 +60,32 @@ el! {
 	}
 }
 
-impl<T: ToString> From<T> for SpeakableElement {
+impl<T: ToString> From<T> for Element {
 	fn from(value: T) -> Self {
-		SpeakableElement::Text(Text(value.to_string()))
+		Element::Text(Text(value.to_string()))
 	}
 }
 
 /// The root element of an SSML document.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug)]
 pub struct Speak {
-	elements: Vec<SpeakableElement>,
+	children: Vec<Element>,
 	marks: (Option<String>, Option<String>),
 	lang: Option<String>
 }
 
 impl Speak {
-	/// Creates a new SSML document with spoken elements.
+	/// Creates a new SSML document with elements.
 	///
 	/// `lang` specifies the language of the spoken text contained within the document, e.g. `en-US`. It is required for
 	/// ACSS and will throw an error if not provided.
 	///
 	/// ```
-	/// ssml::Speak::new(Some("en-US"), ["Hello, world!"]);
+	/// let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 	/// ```
-	pub fn new<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Self {
+	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Self {
 		Self {
-			elements: elements.into_iter().map(|f| f.into()).collect(),
+			children: elements.into_iter().map(|f| f.into()).collect(),
 			lang: lang.map(|f| f.to_owned()),
 			..Speak::default()
 		}
@@ -99,24 +101,52 @@ impl Speak {
 		self
 	}
 
-	/// Extend this SSML document with additional spoken elements.
+	/// Extend this SSML document with an additional element.
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
 	/// # fn main() -> anyhow::Result<()> {
 	/// let mut doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
-	/// doc = doc.with_elements(["This is an SSML document."]);
+	/// doc.push("This is an SSML document.");
 	///
 	/// assert_eq!(
 	/// 	doc.serialize_to_string(Flavor::AmazonPolly)?,
-	/// 	r#"<speak xml:lang="en-US">Hello, world! This is an SSML document. </speak>"#
+	/// 	r#"<speak xml:lang="en-US">Hello, world! This is an SSML document.</speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn with_elements<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
-		self.elements.extend(elements.into_iter().map(|f| f.into()));
-		self
+	pub fn push(&mut self, element: impl Into<Element>) {
+		self.children.push(element.into());
+	}
+
+	/// Extend this SSML document with additional elements.
+	///
+	/// ```
+	/// # use ssml::{Flavor, Serialize};
+	/// # fn main() -> anyhow::Result<()> {
+	/// let mut doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
+	/// doc.extend(["This is an SSML document."]);
+	///
+	/// assert_eq!(
+	/// 	doc.serialize_to_string(Flavor::AmazonPolly)?,
+	/// 	r#"<speak xml:lang="en-US">Hello, world! This is an SSML document.</speak>"#
+	/// );
+	/// # Ok(())
+	/// # }
+	/// ```
+	pub fn extend<S: Into<Element>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
+		self.children.extend(elements.into_iter().map(|f| f.into()));
+	}
+
+	/// Returns a reference to the document's direct children.
+	pub fn children(&self) -> &[Element] {
+		&self.children
+	}
+
+	/// Returns a mutable reference to the document's direct children.
+	pub fn children_mut(&mut self) -> &mut [Element] {
+		&mut self.children
 	}
 }
 
@@ -148,16 +178,14 @@ impl Serialize for Speak {
 
 		writer.write_all(b">")?;
 
-		for el in &self.elements {
-			el.serialize(writer, flavor)?;
-		}
+		util::serialize_elements(writer, &self.children, flavor)?;
 
 		writer.write_all(b"</speak>")?;
 		Ok(())
 	}
 }
 
-/// Creates a new SSML document with spoken elements.
+/// Creates a new SSML document with elements.
 ///
 /// `lang` specifies the language of the spoken text contained within the document, e.g. `en-US`. It is required for
 /// ACSS and will throw an error if not provided.
@@ -168,13 +196,13 @@ impl Serialize for Speak {
 /// let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 ///
 /// let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-/// assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world! </speak>"#);
+/// assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
 /// # Ok(())
 /// # }
 /// ```
-pub fn speak<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Speak {
+pub fn speak<S: Into<Element>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Speak {
 	Speak {
-		elements: elements.into_iter().map(|f| f.into()).collect(),
+		children: elements.into_iter().map(|f| f.into()).collect(),
 		lang: lang.map(|f| f.to_owned()),
 		..Speak::default()
 	}

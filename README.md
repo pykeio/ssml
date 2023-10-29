@@ -8,5 +8,5 @@ let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 
 use ssml::Serialize;
 let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world! </speak>"#);
+assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
 ```

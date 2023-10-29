@@ -1,6 +1,6 @@
 [package]
 name = "ssml"
-version = "0.0.4"
+version = "0.0.5"
 description = "Utilities for working with Speech Synthesis Markup Language documents"
 license = "Apache-2.0"
 authors = [ "Carson M <carson@pyke.io>" ]
@@ -9,3 +9,4 @@ repository = "https://github.com/pykeio/ssml"
 
 [dependencies]
 anyhow = "1.0"
+dyn-clone = "1.0"

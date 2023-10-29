@@ -1,6 +1,6 @@
 use std::{fmt::Display, io::Write};
 
-use crate::{util, Flavor, Serialize, SpeakableElement};
+use crate::{util, Element, Flavor, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum VoiceGender {
@@ -27,8 +27,9 @@ impl Display for VoiceGender {
 pub struct VoiceConfig {
 	pub gender: Option<VoiceGender>,
 	pub age: Option<u8>,
-	pub name: Option<String>,
-	pub variant: Option<String>
+	pub names: Option<Vec<String>>,
+	pub variant: Option<String>,
+	pub languages: Option<Vec<String>>
 }
 
 impl VoiceConfig {
@@ -39,7 +40,7 @@ impl VoiceConfig {
 	/// ```
 	pub fn named(name: impl ToString) -> Self {
 		Self {
-			name: Some(name.to_string()),
+			names: Some(vec![name.to_string()]),
 			..VoiceConfig::default()
 		}
 	}
@@ -59,64 +60,48 @@ impl Serialize for VoiceConfig {
 		if let Some(age) = &self.age {
 			util::write_attr(writer, "age", age.to_string())?;
 		}
-		if let Some(name) = &self.name {
-			util::write_attr(writer, "name", name)?;
+		if let Some(names) = &self.names {
+			util::write_attr(writer, "name", names.join(" "))?;
 		}
 		if let Some(variant) = &self.variant {
 			util::write_attr(writer, "variant", variant)?;
+		}
+		if let Some(languages) = &self.languages {
+			util::write_attr(writer, "language", languages.join(" "))?;
 		}
 		Ok(())
 	}
 }
 
 /// The [`Voice`] element allows you to specify a voice or use multiple different voices in one document.
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Default, Debug)]
 pub struct Voice {
-	pub(crate) elements: Vec<SpeakableElement>,
+	pub(crate) children: Vec<Element>,
+	pub(crate) attrs: Vec<(String, String)>,
 	config: VoiceConfig
 }
 
 impl Voice {
-	/// Creates a new `voice` element to change the voice of a section spoken elements.
+	/// Creates a new `voice` element to change the voice of a section of spoken elements.
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
 	/// # fn main() -> anyhow::Result<()> {
-	/// let doc = ssml::Speak::new(None, [ssml::Voice::new("en-US-Neural2-F", ["Hello, world!"])]);
+	/// let doc = ssml::speak(None, [ssml::voice("en-US-Neural2-F", ["Hello, world!"])]);
 	///
 	/// assert_eq!(
 	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! </voice></speak>"#
+	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world!</voice></speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn new<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Self {
+	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Self {
 		Self {
-			elements: elements.into_iter().map(|f| f.into()).collect(),
+			children: elements.into_iter().map(|f| f.into()).collect(),
+			attrs: vec![],
 			config: config.into()
 		}
-	}
-
-	/// Extend this `voice` section with additional spoken elements.
-	///
-	/// ```
-	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
-	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
-	/// voice = voice.with_elements(["This is an SSML document."]);
-	/// let doc = ssml::Speak::new(None, [voice]);
-	///
-	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! This is an SSML document. </voice></speak>"#
-	/// );
-	/// # Ok(())
-	/// # }
-	/// ```
-	pub fn with_elements<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
-		self.elements.extend(elements.into_iter().map(|f| f.into()));
-		self
 	}
 
 	/// Modifies the voice configuration of this `voice` section.
@@ -129,22 +114,78 @@ impl Voice {
 		self.config = config.into();
 		self
 	}
+
+	/// Extend this `voice` section with an additional element.
+	///
+	/// ```
+	/// # use ssml::{Flavor, Serialize};
+	/// # fn main() -> anyhow::Result<()> {
+	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
+	/// voice.push("This is an SSML document.");
+	/// let doc = ssml::speak(None, [voice]);
+	///
+	/// assert_eq!(
+	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
+	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! This is an SSML document.</voice></speak>"#
+	/// );
+	/// # Ok(())
+	/// # }
+	/// ```
+	pub fn push(&mut self, element: impl Into<Element>) {
+		self.children.push(element.into());
+	}
+
+	/// Extend this `voice` section with additional elements.
+	///
+	/// ```
+	/// # use ssml::{Flavor, Serialize};
+	/// # fn main() -> anyhow::Result<()> {
+	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
+	/// voice.extend(["This is an SSML document."]);
+	/// let doc = ssml::speak(None, [voice]);
+	///
+	/// assert_eq!(
+	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
+	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! This is an SSML document.</voice></speak>"#
+	/// );
+	/// # Ok(())
+	/// # }
+	/// ```
+	pub fn extend<S: Into<Element>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
+		self.children.extend(elements.into_iter().map(|f| f.into()));
+	}
+
+	/// Returns the voice configuration used by this element.
+	pub fn config(&self) -> &VoiceConfig {
+		&self.config
+	}
+
+	/// Returns a reference to the elements contained within this `voice` section.
+	pub fn children(&self) -> &[Element] {
+		&self.children
+	}
+
+	/// Returns a mutable reference to the elements contained within this `voice` section.
+	pub fn children_mut(&mut self) -> &mut [Element] {
+		&mut self.children
+	}
 }
 
 impl Serialize for Voice {
 	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
 		writer.write_all(b"<voice")?;
 		self.config.serialize(writer, flavor)?;
-		writer.write_all(b">")?;
-		for el in &self.elements {
-			el.serialize(writer, flavor)?;
+		for attr in &self.attrs {
+			util::write_attr(writer, &attr.0, &attr.1)?;
 		}
+		writer.write_all(b">")?;
+		util::serialize_elements(writer, &self.children, flavor)?;
 		writer.write_all(b"</voice>")?;
 		Ok(())
 	}
 }
 
-/// Creates a new `voice` element to change the voice of a section spoken elements.
+/// Creates a new `voice` element to change the voice of a section of spoken elements.
 ///
 /// ```
 /// # use ssml::{Flavor, Serialize};
@@ -153,11 +194,11 @@ impl Serialize for Voice {
 ///
 /// assert_eq!(
 /// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! </voice></speak>"#
+/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world!</voice></speak>"#
 /// );
 /// # Ok(())
 /// # }
 /// ```
-pub fn voice<S: Into<SpeakableElement>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Voice {
+pub fn voice<S: Into<Element>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Voice {
 	Voice::new(config, elements)
 }
