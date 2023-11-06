@@ -8,5 +8,4 @@ edition = "2021"
 repository = "https://github.com/pykeio/ssml"
 
 [dependencies]
-anyhow = "1.0"
 dyn-clone = "1.0"

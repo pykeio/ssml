@@ -1,9 +1,6 @@
-use std::io::Write;
-
 use crate::{
-	speak::Element,
 	unit::{Decibels, TimeDesignation},
-	util, Flavor, Serialize
+	util, Element, Flavor, Serialize, SerializeOptions, XmlWriter
 };
 
 /// Specify repeating an [`Audio`] element's playback for a certain number of times, or for a determined duration.
@@ -148,52 +145,48 @@ impl Audio {
 }
 
 impl Serialize for Audio {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
-		writer.write_all(b"<audio")?;
-		if !self.src.is_empty() {
-			util::write_attr(writer, "src", &self.src)?;
-		} else if flavor == Flavor::GoogleCloudTextToSpeech {
-			// https://cloud.google.com/text-to-speech/docs/ssml#attributes_1
-			return Err(crate::error!("GCTTS requires <audio> elements to have a valid `src`."))?;
-		}
-
-		if let Some(clip_begin) = &self.clip.0 {
-			util::write_attr(writer, "clipBegin", clip_begin.to_string())?;
-		}
-		if let Some(clip_end) = &self.clip.1 {
-			util::write_attr(writer, "clipEnd", clip_end.to_string())?;
-		}
-
-		if let Some(repeat) = &self.repeat {
-			match repeat {
-				AudioRepeat::Duration(dur) => util::write_attr(writer, "repeatDur", dur.to_string())?,
-				AudioRepeat::Times(times) => {
-					if times.is_sign_negative() {
-						return Err(crate::error!("`times` cannot be negative"))?;
-					}
-					util::write_attr(writer, "times", times.to_string())?;
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+		if options.perform_checks {
+			if options.flavor == Flavor::GoogleCloudTextToSpeech && self.src.is_empty() {
+				// https://cloud.google.com/text-to-speech/docs/ssml#attributes_1
+				return Err(crate::error!("GCTTS requires <audio> elements to have a valid `src`."))?;
+			}
+			if let Some(AudioRepeat::Times(times)) = &self.repeat {
+				if times.is_sign_negative() {
+					return Err(crate::error!("`times` cannot be negative"))?;
+				}
+			}
+			if let Some(speed) = &self.speed {
+				if speed.is_sign_negative() {
+					return Err(crate::error!("`speed` cannot be negative"))?;
 				}
 			}
 		}
 
-		if let Some(sound_level) = &self.sound_level {
-			util::write_attr(writer, "soundLevel", sound_level.to_string())?;
-		}
+		writer.element("audio", |writer| {
+			writer.attr("src", &self.src)?;
 
-		if let Some(speed) = &self.speed {
-			if speed.is_sign_negative() {
-				return Err(crate::error!("`speed` cannot be negative"))?;
+			writer.attr_opt("clipBegin", self.clip.0.as_ref().map(|t| t.to_string()))?;
+			writer.attr_opt("clipEnd", self.clip.1.as_ref().map(|t| t.to_string()))?;
+
+			if let Some(repeat) = &self.repeat {
+				match repeat {
+					AudioRepeat::Duration(dur) => writer.attr("repeatDur", dur.to_string())?,
+					AudioRepeat::Times(times) => writer.attr("times", times.to_string())?
+				}
 			}
-			util::write_attr(writer, "speed", format!("{}%", speed * 100.))?;
-		}
 
-		writer.write_all(b">")?;
-		if let Some(desc) = &self.desc {
-			writer.write_fmt(format_args!("<desc>{}</desc>", util::escape(desc)))?;
-		}
-		util::serialize_elements(writer, &self.alternate, flavor)?;
-		writer.write_all(b"</audio>")?;
+			writer.attr_opt("soundLevel", self.sound_level.as_ref().map(|t| t.to_string()))?;
+			writer.attr_opt("speed", self.speed.map(|s| format!("{}%", s * 100.)))?;
 
+			if let Some(desc) = &self.desc {
+				writer.element("desc", |writer| writer.text(desc))?;
+			}
+
+			util::serialize_elements(writer, &self.alternate, options)?;
+
+			Ok(())
+		})?;
 		Ok(())
 	}
 }
@@ -210,11 +203,16 @@ pub fn audio(src: impl ToString) -> Audio {
 #[cfg(test)]
 mod tests {
 	use super::{Audio, AudioRepeat};
-	use crate::{Flavor, Serialize};
+	use crate::{Serialize, SerializeOptions};
 
 	#[test]
 	fn non_negative_speed() {
-		assert!(Audio::default().with_speed(-1.0).serialize_to_string(Flavor::Generic).is_err());
+		assert!(
+			Audio::default()
+				.with_speed(-1.0)
+				.serialize_to_string(&SerializeOptions::default())
+				.is_err()
+		);
 	}
 
 	#[test]
@@ -222,7 +220,7 @@ mod tests {
 		assert!(
 			Audio::default()
 				.with_repeat(AudioRepeat::Times(-1.0))
-				.serialize_to_string(Flavor::Generic)
+				.serialize_to_string(&SerializeOptions::default())
 				.is_err()
 		);
 	}

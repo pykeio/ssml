@@ -31,7 +31,7 @@ impl Error for TimeDesignationError {}
 /// Time designations can be provided in either seconds (`s`) or milliseconds (`ms`):
 /// ```
 /// # use ssml::TimeDesignation;
-/// # fn main() -> anyhow::Result<()> {
+/// # fn main() -> ssml::Result<()> {
 /// assert_eq!("15s".parse::<TimeDesignation>()?, TimeDesignation::from_millis(15_000.));
 /// assert_eq!("750ms".parse::<TimeDesignation>()?, TimeDesignation::from_millis(750.));
 /// assert_eq!("+0.75s".parse::<TimeDesignation>()?, TimeDesignation::from_millis(750.));
@@ -128,7 +128,7 @@ impl Error for DecibelsError {}
 ///
 /// ```
 /// # use ssml::Decibels;
-/// # fn main() -> anyhow::Result<()> {
+/// # fn main() -> ssml::Result<()> {
 /// assert_eq!("+0.0dB".parse::<Decibels>()?, Decibels(0.));
 /// assert_eq!("-6dB".parse::<Decibels>()?, Decibels(-6.));
 /// assert_eq!("2dB".parse::<Decibels>()?, Decibels(2.));

@@ -11,10 +11,15 @@
 //!
 //! ```
 //! use ssml::Serialize;
-//! # fn main() -> anyhow::Result<()> {
+//! # fn main() -> ssml::Result<()> {
 //! # let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
-//! let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-//! assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
+//! let str = doc.serialize_to_string(&ssml::SerializeOptions::default().pretty())?;
+//! assert_eq!(
+//! 	str,
+//! 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+//! 	Hello, world!
+//! </speak>"#
+//! );
 //! # Ok(())
 //! # }
 //! ```
@@ -24,7 +29,7 @@
 use std::{fmt::Debug, io::Write};
 
 mod audio;
-mod custom;
+mod element;
 mod error;
 pub mod mstts;
 mod speak;
@@ -34,14 +39,18 @@ pub mod util;
 pub mod visit;
 pub mod visit_mut;
 mod voice;
+mod xml;
 
-pub(crate) use self::error::{error, GenericError};
+pub(crate) use self::error::error;
 pub use self::{
 	audio::{audio, Audio, AudioRepeat},
-	speak::{speak, Element, Speak},
+	element::{DynElement, Element},
+	error::{Error, Result},
+	speak::{speak, Speak},
 	text::{text, Text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
-	voice::{voice, Voice, VoiceConfig, VoiceGender}
+	voice::{voice, Voice, VoiceConfig, VoiceGender},
+	xml::XmlWriter
 };
 
 /// Vendor-specific flavor of SSML. Specifying this can be used to enable compatibility checks & add additional
@@ -70,15 +79,75 @@ pub enum Flavor {
 	PykeSongbird
 }
 
+/// Configuration for elements that support [`Serialize`].
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct SerializeOptions {
+	/// The flavor of SSML to output; see [`Flavor`]. When `perform_checks` is enabled (which it is by default), this
+	/// can help catch compatibility issues with different speech synthesis providers.
+	pub flavor: Flavor,
+	/// Whether or not to format the outputted SSML in a human-readable format.
+	///
+	/// Generally, this should only be used for debugging. Some providers may charge per SSML character (not just spoken
+	/// character), so enabling this option in production may significantly increase costs.
+	pub pretty: bool,
+	/// Whether or not to perform compatibility checks with the chosen flavor. This is enabled by default.
+	pub perform_checks: bool
+}
+
+impl Default for SerializeOptions {
+	fn default() -> Self {
+		SerializeOptions {
+			flavor: Flavor::Generic,
+			pretty: false,
+			perform_checks: true
+		}
+	}
+}
+
+impl SerializeOptions {
+	pub fn min(mut self) -> Self {
+		self.pretty = false;
+		self
+	}
+
+	pub fn pretty(mut self) -> Self {
+		self.pretty = true;
+		self
+	}
+
+	pub fn flavor(mut self, flavor: Flavor) -> Self {
+		self.flavor = flavor;
+		self
+	}
+
+	pub fn perform_checks(mut self) -> Self {
+		self.perform_checks = true;
+		self
+	}
+
+	pub fn no_checks(mut self) -> Self {
+		self.perform_checks = false;
+		self
+	}
+}
+
 /// Trait to support serializing SSML elements.
 pub trait Serialize {
-	/// Serialize this SSML element into a [`Write`]r.
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()>;
+	/// Serialize this SSML element into an `std` [`Write`]r.
+	fn serialize<W: Write>(&self, writer: &mut W, options: &SerializeOptions) -> crate::Result<()> {
+		let mut writer = XmlWriter::new(writer, options.pretty);
+		self.serialize_xml(&mut writer, options)?;
+		Ok(())
+	}
+
+	/// Serialize this SSML element into an [`XmlWriter`].
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()>;
 
 	/// Serialize this SSML element into a string.
-	fn serialize_to_string(&self, flavor: Flavor) -> anyhow::Result<String> {
+	fn serialize_to_string(&self, options: &SerializeOptions) -> crate::Result<String> {
 		let mut write = Vec::new();
-		self.serialize(&mut write, flavor)?;
+		self.serialize(&mut write, options)?;
 		Ok(std::str::from_utf8(&write)?.to_owned())
 	}
 }
@@ -115,12 +184,18 @@ impl Meta {
 }
 
 impl Serialize for Meta {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
-		if let Some(flavors) = self.restrict_flavor.as_ref() {
-			if !flavors.iter().any(|f| f == &flavor) {
-				anyhow::bail!("{} cannot be used with {flavor:?}", if let Some(name) = &self.name { name } else { "this meta element" });
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+		if options.perform_checks {
+			if let Some(flavors) = self.restrict_flavor.as_ref() {
+				if !flavors.iter().any(|f| f == &options.flavor) {
+					return Err(crate::error!(
+						"{} cannot be used with {:?}",
+						if let Some(name) = &self.name { name } else { "this meta element" },
+						options.flavor
+					));
+				}
 			}
 		}
-		Ok(writer.write_all(self.raw.as_bytes())?)
+		writer.raw(&self.raw)
 	}
 }

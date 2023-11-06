@@ -4,7 +4,7 @@
 //!
 //! ```
 //! # use ssml::{Flavor, Serialize};
-//! # fn main() -> anyhow::Result<()> {
+//! # fn main() -> ssml::Result<()> {
 //! use ssml::visit::{self, Visit};
 //!
 //! #[derive(Default)]
@@ -32,7 +32,7 @@
 //! # }
 //! ```
 
-use crate::{custom::CustomElement, Audio, Element, Meta, Speak, Text, Voice};
+use crate::{Audio, DynElement, Element, Meta, Speak, Text, Voice};
 
 pub trait Visit<'s> {
 	fn visit_speak(&mut self, node: &'s Speak) {
@@ -55,8 +55,8 @@ pub trait Visit<'s> {
 		self::visit_voice(self, node)
 	}
 
-	fn visit_custom(&mut self, node: &'s dyn CustomElement) {
-		self::visit_custom(self, node)
+	fn visit_dyn(&mut self, node: &'s dyn DynElement) {
+		self::visit_dyn(self, node)
 	}
 
 	fn visit_speakable(&mut self, node: &'s Element) {
@@ -80,7 +80,7 @@ pub fn visit_voice<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s Voice) {
 	}
 }
 
-pub fn visit_custom<'s, V: Visit<'s> + ?Sized>(_v: &mut V, _node: &'s dyn CustomElement) {}
+pub fn visit_dyn<'s, V: Visit<'s> + ?Sized>(_v: &mut V, _node: &'s dyn DynElement) {}
 
 pub fn visit_speakable<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s Element) {
 	match node {
@@ -88,7 +88,7 @@ pub fn visit_speakable<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s Element) 
 		Element::Meta(node) => visit_meta(v, node),
 		Element::Text(node) => visit_text(v, node),
 		Element::Voice(node) => visit_voice(v, node),
-		Element::Custom(node) => visit_custom(v, node.as_ref())
+		Element::Dyn(node) => visit_dyn(v, node.as_ref())
 	}
 }
 

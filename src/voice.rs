@@ -1,6 +1,6 @@
-use std::{fmt::Display, io::Write};
+use std::fmt::Display;
 
-use crate::{util, Element, Flavor, Serialize};
+use crate::{util, Element, Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum VoiceGender {
@@ -53,23 +53,12 @@ impl<S: ToString> From<S> for VoiceConfig {
 }
 
 impl Serialize for VoiceConfig {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
-		if let Some(gender) = &self.gender {
-			util::write_attr(writer, "gender", gender.to_string())?;
-		}
-		if let Some(age) = &self.age {
-			util::write_attr(writer, "age", age.to_string())?;
-		}
-		if let Some(names) = &self.names {
-			util::write_attr(writer, "name", names.join(" "))?;
-		}
-		if let Some(variant) = &self.variant {
-			util::write_attr(writer, "variant", variant)?;
-		}
-		if let Some(languages) = &self.languages {
-			util::write_attr(writer, "language", languages.join(" "))?;
-		}
-		Ok(())
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+		writer.attr_opt("gender", self.gender.as_ref().map(|c| c.to_string()))?;
+		writer.attr_opt("age", self.age.as_ref().map(|c| c.to_string()))?;
+		writer.attr_opt("name", self.names.as_ref().map(|c| c.join(" ")))?;
+		writer.attr_opt("variant", self.variant.as_ref())?;
+		writer.attr_opt("language", self.languages.as_ref().map(|c| c.join(" ")))
 	}
 }
 
@@ -86,12 +75,18 @@ impl Voice {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let doc = ssml::speak(None, [ssml::voice("en-US-Neural2-F", ["Hello, world!"])]);
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world!</voice></speak>"#
+	/// 	doc.serialize_to_string(
+	/// 		&ssml::SerializeOptions::default().flavor(ssml::Flavor::GoogleCloudTextToSpeech).pretty()
+	/// 	)?,
+	/// 	r#"<speak>
+	/// 	<voice name="en-US-Neural2-F">
+	/// 		Hello, world!
+	/// 	</voice>
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -119,14 +114,21 @@ impl Voice {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
 	/// voice.push("This is an SSML document.");
 	/// let doc = ssml::speak(None, [voice]);
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! This is an SSML document.</voice></speak>"#
+	/// 	doc.serialize_to_string(
+	/// 		&ssml::SerializeOptions::default().flavor(ssml::Flavor::GoogleCloudTextToSpeech).pretty()
+	/// 	)?,
+	/// 	r#"<speak>
+	/// 	<voice name="en-US-Neural2-F">
+	/// 		Hello, world!
+	/// 		This is an SSML document.
+	/// 	</voice>
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -139,14 +141,21 @@ impl Voice {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let mut voice = ssml::voice("en-US-Neural2-F", ["Hello, world!"]);
 	/// voice.extend(["This is an SSML document."]);
 	/// let doc = ssml::speak(None, [voice]);
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-	/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world! This is an SSML document.</voice></speak>"#
+	/// 	doc.serialize_to_string(
+	/// 		&ssml::SerializeOptions::default().flavor(ssml::Flavor::GoogleCloudTextToSpeech).pretty()
+	/// 	)?,
+	/// 	r#"<speak>
+	/// 	<voice name="en-US-Neural2-F">
+	/// 		Hello, world!
+	/// 		This is an SSML document.
+	/// 	</voice>
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -172,16 +181,14 @@ impl Voice {
 }
 
 impl Serialize for Voice {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
-		writer.write_all(b"<voice")?;
-		self.config.serialize(writer, flavor)?;
-		for attr in &self.attrs {
-			util::write_attr(writer, &attr.0, &attr.1)?;
-		}
-		writer.write_all(b">")?;
-		util::serialize_elements(writer, &self.children, flavor)?;
-		writer.write_all(b"</voice>")?;
-		Ok(())
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+		writer.element("voice", |writer| {
+			self.config.serialize_xml(writer, options)?;
+			for attr in &self.attrs {
+				writer.attr(&attr.0, &attr.1)?;
+			}
+			util::serialize_elements(writer, &self.children, options)
+		})
 	}
 }
 
@@ -189,12 +196,18 @@ impl Serialize for Voice {
 ///
 /// ```
 /// # use ssml::{Flavor, Serialize};
-/// # fn main() -> anyhow::Result<()> {
+/// # fn main() -> ssml::Result<()> {
 /// let doc = ssml::speak(None, [ssml::voice("en-US-Neural2-F", ["Hello, world!"])]);
 ///
 /// assert_eq!(
-/// 	doc.serialize_to_string(Flavor::GoogleCloudTextToSpeech)?,
-/// 	r#"<speak><voice name="en-US-Neural2-F">Hello, world!</voice></speak>"#
+/// 	doc.serialize_to_string(
+/// 		&ssml::SerializeOptions::default().flavor(ssml::Flavor::GoogleCloudTextToSpeech).pretty()
+/// 	)?,
+/// 	r#"<speak>
+/// 	<voice name="en-US-Neural2-F">
+/// 		Hello, world!
+/// 	</voice>
+/// </speak>"#
 /// );
 /// # Ok(())
 /// # }

@@ -1,70 +1,6 @@
-use std::{fmt::Debug, io::Write};
+use std::fmt::Debug;
 
-use crate::{custom::CustomElement, util, Audio, Flavor, Meta, Serialize, Text, Voice};
-
-macro_rules! el {
-	(
-		$(#[$outer:meta])*
-		pub enum $name:ident {
-			$(
-				$(#[$innermeta:meta])*
-				$variant:ident($inner:ty)
-			),*
-		}
-	) => {
-		$(#[$outer])*
-		pub enum $name {
-			$(
-				$(#[$innermeta])*
-				$variant($inner)
-			),*
-		}
-
-		$(impl From<$inner> for $name {
-			fn from(val: $inner) -> $name {
-				$name::$variant(val)
-			}
-		})*
-
-		impl $crate::Serialize for $name {
-			fn serialize<W: std::io::Write>(&self, writer: &mut W, flavor: $crate::Flavor) -> anyhow::Result<()> {
-				match self {
-					$($name::$variant(inner) => inner.serialize(writer, flavor),)*
-				}
-			}
-		}
-	};
-}
-
-el! {
-	#[derive(Clone, Debug)]
-	#[non_exhaustive]
-	pub enum Element {
-		Text(Text),
-		Audio(Audio),
-		Voice(Voice),
-		Meta(Meta),
-		Custom(Box<dyn CustomElement>)
-		// Break(BreakElement),
-		// Emphasis(EmphasisElement),
-		// Lang(LangElement),
-		// Mark(MarkElement),
-		// Paragraph(ParagraphElement),
-		// Phoneme(PhonemeElement),
-		// Prosody(ProsodyElement),
-		// SayAs(SayAsElement),
-		// Sub(SubElement),
-		// Sentence(SentenceElement),
-		// Voice(VoiceElement),
-		// Word(WordElement)
-	}
-}
-
-impl<T: ToString> From<T> for Element {
-	fn from(value: T) -> Self {
-		Element::Text(Text(value.to_string()))
-	}
-}
+use crate::{util, Element, Flavor, Serialize, SerializeOptions, XmlWriter};
 
 /// The root element of an SSML document.
 #[derive(Default, Debug)]
@@ -105,13 +41,16 @@ impl Speak {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let mut doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 	/// doc.push("This is an SSML document.");
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::AmazonPolly)?,
-	/// 	r#"<speak xml:lang="en-US">Hello, world! This is an SSML document.</speak>"#
+	/// 	doc.serialize_to_string(&ssml::SerializeOptions::default().pretty())?,
+	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+	/// 	Hello, world!
+	/// 	This is an SSML document.
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -124,13 +63,16 @@ impl Speak {
 	///
 	/// ```
 	/// # use ssml::{Flavor, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let mut doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 	/// doc.extend(["This is an SSML document."]);
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::AmazonPolly)?,
-	/// 	r#"<speak xml:lang="en-US">Hello, world! This is an SSML document.</speak>"#
+	/// 	doc.serialize_to_string(&ssml::SerializeOptions::default().pretty())?,
+	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+	/// 	Hello, world!
+	/// 	This is an SSML document.
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -151,37 +93,28 @@ impl Speak {
 }
 
 impl Serialize for Speak {
-	fn serialize<W: Write>(&self, writer: &mut W, flavor: Flavor) -> anyhow::Result<()> {
-		writer.write_all(b"<speak")?;
-		if flavor == Flavor::Generic || flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
-			util::write_attr(writer, "version", "1.0")?;
-			util::write_attr(writer, "xmlns", "http://www.w3.org/2001/10/synthesis")?;
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+		if options.perform_checks && self.lang.is_none() && options.flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
+			return Err(crate::error!("{:?} requires a language to be set", options.flavor))?;
 		}
 
-		if let Some(lang) = &self.lang {
-			util::write_attr(writer, "xml:lang", lang)?;
-		} else if flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
-			return Err(crate::error!("{flavor:?} requires a language to be set"))?;
-		}
+		writer.element("speak", |writer| {
+			if matches!(options.flavor, Flavor::Generic | Flavor::MicrosoftAzureCognitiveSpeechServices) {
+				writer.attr("version", "1.0")?;
+				writer.attr("xmlns", "http://www.w3.org/2001/10/synthesis")?;
+			}
 
-		// Include `mstts` namespace for ACSS.
-		if flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
-			util::write_attr(writer, "xmlns:mstts", "http://www.w3.org/2001/mstts")?;
-		}
+			writer.attr_opt("xml:lang", self.lang.as_ref())?;
+			// Include `mstts` namespace for ACSS.
+			if options.flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
+				writer.attr("xmlns:mstts", "http://www.w3.org/2001/mstts")?;
+			}
 
-		if let Some(start_mark) = &self.marks.0 {
-			util::write_attr(writer, "startmark", start_mark)?;
-		}
-		if let Some(end_mark) = &self.marks.1 {
-			util::write_attr(writer, "endmark", end_mark)?;
-		}
+			writer.attr_opt("startmark", self.marks.0.as_ref())?;
+			writer.attr_opt("endmark", self.marks.1.as_ref())?;
 
-		writer.write_all(b">")?;
-
-		util::serialize_elements(writer, &self.children, flavor)?;
-
-		writer.write_all(b"</speak>")?;
-		Ok(())
+			util::serialize_elements(writer, &self.children, options)
+		})
 	}
 }
 
@@ -192,11 +125,16 @@ impl Serialize for Speak {
 ///
 /// ```
 /// # use ssml::Serialize;
-/// # fn main() -> anyhow::Result<()> {
+/// # fn main() -> ssml::Result<()> {
 /// let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 ///
-/// let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-/// assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
+/// let str = doc.serialize_to_string(&ssml::SerializeOptions::default().pretty())?;
+/// assert_eq!(
+/// 	str,
+/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+/// 	Hello, world!
+/// </speak>"#
+/// );
 /// # Ok(())
 /// # }
 /// ```

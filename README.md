@@ -7,6 +7,9 @@ Currently, `ssml-rs` focuses on supporting the subsets of SSML supported by majo
 let doc = ssml::speak(Some("en-US"), ["Hello, world!"]);
 
 use ssml::Serialize;
-let str = doc.serialize_to_string(ssml::Flavor::AmazonPolly)?;
-assert_eq!(str, r#"<speak xml:lang="en-US">Hello, world!</speak>"#);
+let str = doc.serialize_to_string(&ssml::SerializeOptions::default().flavor(Flavor::AmazonPolly))?;
+assert_eq!(
+	str,
+	r#"<speak xml:lang="en-US">Hello, world!</speak>"#
+);
 ```

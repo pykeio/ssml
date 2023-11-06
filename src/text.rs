@@ -1,6 +1,4 @@
-use std::io::Write;
-
-use crate::{util, Flavor, Serialize};
+use crate::{Serialize, SerializeOptions, XmlWriter};
 
 /// A non-marked-up string of text for use as a spoken element.
 #[derive(Default, Debug, Clone)]
@@ -13,9 +11,8 @@ impl<T: ToString> From<T> for Text {
 }
 
 impl Serialize for Text {
-	fn serialize<W: Write>(&self, writer: &mut W, _: Flavor) -> anyhow::Result<()> {
-		writer.write_all(util::escape(&self.0).as_bytes())?;
-		Ok(())
+	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+		writer.text(&self.0)
 	}
 }
 
@@ -27,11 +24,11 @@ pub fn text(s: impl ToString) -> Text {
 #[cfg(test)]
 mod tests {
 	use super::text;
-	use crate::{Flavor, Serialize};
+	use crate::{Serialize, SerializeOptions};
 
 	#[test]
-	fn text_escapes() -> anyhow::Result<()> {
-		assert_eq!(text("One & two").serialize_to_string(Flavor::Generic)?, "One &amp; two");
+	fn text_escapes() -> crate::Result<()> {
+		assert_eq!(text("One & two").serialize_to_string(&SerializeOptions::default())?, "One &amp; two");
 		Ok(())
 	}
 }

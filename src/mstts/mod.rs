@@ -7,6 +7,9 @@ use crate::{voice::Voice, Flavor, Meta};
 pub mod express;
 pub use self::express::{express, Express};
 
+/// Viseme configuration for MSTTS.
+///
+/// See [`MicrosoftVoiceExt::with_mstts_viseme`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MicrosoftViseme {
 	/// Receive visemes as an ID. (equivalent to `<mstts:viseme type="redlips_front" />`)
@@ -24,6 +27,15 @@ impl Display for MicrosoftViseme {
 	}
 }
 
+/// A voice effect to apply to speech.
+///
+/// For some scenarios in production environments, the auditory experience might be degraded due to the playback
+/// distortion on certain devices. For example, the synthesized speech from a car speaker might sound dull and
+/// muffled due to environmental factors such as speaker response, room reverberation, and background noise. The
+/// passenger might have to turn up the volume to hear more clearly. To avoid manual operations in such a scenario,
+/// the audio effect processor can make the sound clearer by compensating the distortion of playback.
+///
+/// See [`MicrosoftVoiceExt::with_mstts_viseme`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MicrosoftVoiceEffect {
 	/// Optimize the auditory experience when providing high-fidelity speech in cars, buses, and other enclosed
@@ -50,19 +62,24 @@ pub trait MicrosoftVoiceExt {
 	///
 	/// ```
 	/// # use ssml::{Flavor, mstts::{MicrosoftVoiceExt, MicrosoftViseme}, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let doc = ssml::speak(
 	/// 	Some("en-US"),
 	/// 	[ssml::voice(
 	/// 		"en-US-JennyNeural",
-	/// 		["Rainbow has seven colors: Red, orange, yellow, green, blue, indigo, and violet."]
+	/// 		["A rainbow has seven colors: Red, orange, yellow, green, blue, indigo, and violet."]
 	/// 	)
 	/// 	.with_mstts_viseme(MicrosoftViseme::FacialExpression)]
 	/// );
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::MicrosoftAzureCognitiveSpeechServices)?,
-	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US" xmlns:mstts="http://www.w3.org/2001/mstts"><voice name="en-US-JennyNeural"><mstts:viseme type="FacialExpression" />Rainbow has seven colors: Red, orange, yellow, green, blue, indigo, and violet.</voice></speak>"#
+	/// 	doc.serialize_to_string(&ssml::SerializeOptions::default().flavor(ssml::Flavor::MicrosoftAzureCognitiveSpeechServices).pretty())?,
+	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US" xmlns:mstts="http://www.w3.org/2001/mstts">
+	/// 	<voice name="en-US-JennyNeural">
+	/// 		<mstts:viseme type="FacialExpression" />
+	/// 		A rainbow has seven colors: Red, orange, yellow, green, blue, indigo, and violet.
+	/// 	</voice>
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
@@ -80,7 +97,7 @@ pub trait MicrosoftVoiceExt {
 	///
 	/// ```
 	/// # use ssml::{Flavor, mstts::{MicrosoftVoiceExt, MicrosoftVoiceEffect}, Serialize};
-	/// # fn main() -> anyhow::Result<()> {
+	/// # fn main() -> ssml::Result<()> {
 	/// let doc = ssml::speak(
 	/// 	Some("en-US"),
 	/// 	[ssml::voice(
@@ -91,8 +108,12 @@ pub trait MicrosoftVoiceExt {
 	/// );
 	///
 	/// assert_eq!(
-	/// 	doc.serialize_to_string(Flavor::MicrosoftAzureCognitiveSpeechServices)?,
-	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US" xmlns:mstts="http://www.w3.org/2001/mstts"><voice name="en-US-JennyNeural" effect="eq_telecomhp8k">Your call is being transferred to a service representative.</voice></speak>"#
+	/// 	doc.serialize_to_string(&ssml::SerializeOptions::default().flavor(ssml::Flavor::MicrosoftAzureCognitiveSpeechServices).pretty())?,
+	/// 	r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US" xmlns:mstts="http://www.w3.org/2001/mstts">
+	/// 	<voice name="en-US-JennyNeural" effect="eq_telecomhp8k">
+	/// 		Your call is being transferred to a service representative.
+	/// 	</voice>
+	/// </speak>"#
 	/// );
 	/// # Ok(())
 	/// # }
