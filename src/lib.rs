@@ -29,8 +29,11 @@
 use std::{fmt::Debug, io::Write};
 
 mod audio;
+mod r#break;
 mod element;
+mod emphasis;
 mod error;
+mod mark;
 pub mod mstts;
 mod speak;
 mod text;
@@ -44,8 +47,11 @@ mod xml;
 pub(crate) use self::error::error;
 pub use self::{
 	audio::{audio, Audio, AudioRepeat},
+	r#break::{breaks, Break, BreakStrength},
 	element::{DynElement, Element},
+	emphasis::{emphasis, Emphasis, EmphasisLevel},
 	error::{Error, Result},
+	mark::{mark, Mark},
 	speak::{speak, Speak},
 	text::{text, Text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},

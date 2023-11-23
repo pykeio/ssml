@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use dyn_clone::DynClone;
 
-use crate::{Audio, Meta, Serialize, SerializeOptions, Text, Voice, XmlWriter};
+use crate::{Audio, Break, Emphasis, Mark, Meta, Serialize, SerializeOptions, Text, Voice, XmlWriter};
 
 macro_rules! el {
 	(
@@ -47,20 +47,19 @@ el! {
 		Audio(Audio),
 		Voice(Voice),
 		Meta(Meta),
+		Break(Break),
+		Emphasis(Emphasis),
+		Mark(Mark),
 		/// A dyn element can be used to implement your own custom elements outside of the `ssml` crate. See
 		/// [`DynElement`] for more information and examples.
 		Dyn(Box<dyn DynElement>)
-		// Break(BreakElement),
-		// Emphasis(EmphasisElement),
 		// Lang(LangElement),
-		// Mark(MarkElement),
 		// Paragraph(ParagraphElement),
 		// Phoneme(PhonemeElement),
 		// Prosody(ProsodyElement),
 		// SayAs(SayAsElement),
 		// Sub(SubElement),
 		// Sentence(SentenceElement),
-		// Voice(VoiceElement),
 		// Word(WordElement)
 	}
 }
