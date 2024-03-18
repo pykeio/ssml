@@ -5,6 +5,7 @@ use crate::{
 
 /// Specify repeating an [`Audio`] element's playback for a certain number of times, or for a determined duration.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum AudioRepeat {
 	/// Repeat the audio a certain number of times. A fractional value is allowed and describes a portion of the
 	/// rendered media.
@@ -18,6 +19,7 @@ pub enum AudioRepeat {
 /// [`Audio`] supports the insertion of recorded audio files and the insertion of other audio formats in conjunction
 /// with synthesized speech output.
 #[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Audio {
 	src: String,
 	desc: Option<String>,

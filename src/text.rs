@@ -2,6 +2,7 @@ use crate::{Serialize, SerializeOptions, XmlWriter};
 
 /// A non-marked-up string of text for use as a spoken element.
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Text(pub String);
 
 impl<T: ToString> From<T> for Text {

@@ -45,6 +45,7 @@ impl Error for TimeDesignationError {}
 /// # }
 /// ```
 #[derive(Default, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TimeDesignation {
 	millis: f32
 }
@@ -141,6 +142,7 @@ impl Error for DecibelsError {}
 /// # }
 /// ```
 #[derive(Default, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Decibels(pub f32);
 
 impl FromStr for Decibels {

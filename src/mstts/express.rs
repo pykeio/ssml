@@ -1,9 +1,10 @@
-use crate::{util, DynElement, Element, Flavor, SerializeOptions, XmlWriter};
+use crate::{util, Element, Flavor, Serialize, SerializeOptions, XmlWriter};
 
 /// A generic expression for use in [`Express`]. Contains the name of the expression and the intensity/degree (default
 /// `1.0`).
-#[derive(Debug, Clone, Copy)]
-pub struct Expression(&'static str, f32);
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Expression(String, f32);
 
 macro_rules! define_expressions {
 	($($(#[$outer:meta])* $x:ident => $e:expr),*) => {
@@ -17,7 +18,7 @@ macro_rules! define_expressions {
 
 			impl From<$x> for Expression {
 				fn from(_: $x) -> Expression {
-					Expression($e, 1.0)
+					Expression(String::from($e), 1.0)
 				}
 			}
 
@@ -28,7 +29,7 @@ macro_rules! define_expressions {
 				/// results in a slight tendency for the target style. A value of `2` results in a doubling of the
 				/// default style intensity.
 				pub fn with_degree(&self, degree: f32) -> Expression {
-					Expression($e, degree.clamp(0.01, 2.0))
+					Expression(String::from($e), degree.clamp(0.01, 2.0))
 				}
 			}
 		)*
@@ -120,6 +121,7 @@ define_expressions! {
 ///
 /// [ms]: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#voice-styles-and-roles
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Express {
 	expression: Expression,
 	children: Vec<Element>
@@ -137,7 +139,7 @@ impl Express {
 	/// 	Some("en-US"),
 	/// 	[ssml::voice(
 	/// 		"en-US-JaneNeural",
-	/// 		[mstts::express(mstts::express::Cheerful.with_degree(0.5), ["Good morning!"]).into_dyn()]
+	/// 		[mstts::express(mstts::express::Cheerful.with_degree(0.5), ["Good morning!"])]
 	/// 	)]
 	/// );
 	///
@@ -181,31 +183,29 @@ impl Express {
 		&mut self.children
 	}
 
-	/// Converts this element into an [`Element::Dyn`].
-	pub fn into_dyn(self) -> Element {
-		Element::Dyn(Box::new(self))
+	/// Converts this element into an [`Element`].
+	pub fn into_el(self) -> Element {
+		Element::FlavorMSTTS(super::Element::Express(self))
 	}
 }
 
-impl DynElement for Express {
+impl From<Express> for crate::Element {
+	fn from(value: Express) -> Self {
+		value.into_el()
+	}
+}
+
+impl Serialize for Express {
 	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks && options.flavor != Flavor::MicrosoftAzureCognitiveSpeechServices {
 			return Err(crate::error!("`mstts::Express` is only supported in ACSS/MSTTS"));
 		}
 
 		writer.element("mstts:express-as", |writer| {
-			writer.attr("style", self.expression.0)?;
+			writer.attr("style", &self.expression.0)?;
 			writer.attr("styledegree", self.expression.1.to_string())?;
 			util::serialize_elements(writer, &self.children, options)
 		})
-	}
-
-	fn children(&self) -> Option<&Vec<Element>> {
-		Some(&self.children)
-	}
-
-	fn tag_name(&self) -> Option<&str> {
-		Some("mstts:express-as")
 	}
 }
 
@@ -220,7 +220,7 @@ impl DynElement for Express {
 /// 	Some("en-US"),
 /// 	[ssml::voice(
 /// 		"en-US-JaneNeural",
-/// 		[mstts::express(mstts::express::Cheerful.with_degree(0.5), ["Good morning!"]).into_dyn()]
+/// 		[mstts::express(mstts::express::Cheerful.with_degree(0.5), ["Good morning!"])]
 /// 	)]
 /// );
 ///

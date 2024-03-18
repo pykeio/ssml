@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::{util, Element, Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum VoiceGender {
 	#[default]
 	Unspecified,
@@ -24,6 +25,7 @@ impl Display for VoiceGender {
 
 /// Configuration for the [`Voice`] element.
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VoiceConfig {
 	pub gender: Option<VoiceGender>,
 	pub age: Option<u8>,
@@ -64,6 +66,7 @@ impl Serialize for VoiceConfig {
 
 /// The [`Voice`] element allows you to specify a voice or use multiple different voices in one document.
 #[derive(Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Voice {
 	pub(crate) children: Vec<Element>,
 	pub(crate) attrs: Vec<(String, String)>,

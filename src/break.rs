@@ -1,6 +1,7 @@
 use crate::{Serialize, SerializeOptions, TimeDesignation, XmlWriter};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BreakStrength {
 	None,
 	ExtraWeak,
@@ -12,6 +13,7 @@ pub enum BreakStrength {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Break {
 	Strength(BreakStrength),
 	Time(TimeDesignation)

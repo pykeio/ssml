@@ -1,6 +1,7 @@
 use crate::{Element, Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EmphasisLevel {
 	Reduced,
 	None,
@@ -10,6 +11,7 @@ pub enum EmphasisLevel {
 }
 
 #[derive(Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Emphasis {
 	level: EmphasisLevel,
 	pub(crate) children: Vec<Element>

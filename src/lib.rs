@@ -63,6 +63,7 @@ pub use self::{
 /// metadata required by certain services.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Flavor {
 	/// Generic SSML.
 	///
@@ -163,6 +164,7 @@ pub trait Serialize {
 /// It differs from [`Text`] in that the contents of `Meta` are not escaped, meaning `Meta` can be used to write raw
 /// XML into the document.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Meta {
 	raw: String,
 	name: Option<String>,

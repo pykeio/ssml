@@ -4,6 +4,7 @@ use crate::{util, Element, Flavor, Serialize, SerializeOptions, XmlWriter};
 
 /// The root element of an SSML document.
 #[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Speak {
 	children: Vec<Element>,
 	marks: (Option<String>, Option<String>),

@@ -1,4 +1,4 @@
-use crate::{Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice};
+use crate::{mstts, Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice};
 
 pub trait VisitMut<'s> {
 	fn visit_speak_mut(&mut self, node: &'s mut Speak) {
@@ -37,6 +37,14 @@ pub trait VisitMut<'s> {
 		self::visit_dyn_mut(self, node)
 	}
 
+	fn visit_mstts_element_mut(&mut self, node: &'s mut mstts::Element) {
+		self::visit_mstts_element_mut(self, node)
+	}
+
+	fn visit_mstts_express_mut(&mut self, node: &'s mut mstts::Express) {
+		self::visit_mstts_express_mut(self, node)
+	}
+
 	fn visit_element_mut(&mut self, node: &'s mut Element) {
 		self::visit_element_mut(self, node)
 	}
@@ -70,6 +78,18 @@ pub fn visit_mark_mut<'s, V: VisitMut<'s> + ?Sized>(_v: &mut V, _node: &'s mut M
 
 pub fn visit_dyn_mut<'s, V: VisitMut<'s> + ?Sized>(_v: &mut V, _node: &'s mut dyn DynElement) {}
 
+pub fn visit_mstts_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut mstts::Element) {
+	match node {
+		mstts::Element::Express(node) => visit_mstts_express_mut(v, node)
+	}
+}
+
+pub fn visit_mstts_express_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut mstts::Express) {
+	for node in node.children_mut() {
+		v.visit_element_mut(node);
+	}
+}
+
 pub fn visit_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut Element) {
 	match node {
 		Element::Audio(node) => visit_audio_mut(v, node),
@@ -79,6 +99,7 @@ pub fn visit_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut 
 		Element::Break(node) => visit_break_mut(v, node),
 		Element::Emphasis(node) => visit_emphasis_mut(v, node),
 		Element::Mark(node) => visit_mark_mut(v, node),
+		Element::FlavorMSTTS(node) => visit_mstts_element_mut(v, node),
 		Element::Dyn(node) => visit_dyn_mut(v, node.as_mut())
 	}
 }

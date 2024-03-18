@@ -7,6 +7,14 @@ use crate::{voice::Voice, Flavor, Meta};
 pub mod express;
 pub use self::express::{express, Express};
 
+crate::element::el! {
+	#[derive(Debug, Clone)]
+	#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+	pub enum Element {
+		Express(Express)
+	}
+}
+
 /// Viseme configuration for MSTTS.
 ///
 /// See [`MicrosoftVoiceExt::with_mstts_viseme`].
