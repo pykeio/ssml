@@ -35,6 +35,7 @@ mod emphasis;
 mod error;
 mod mark;
 pub mod mstts;
+mod say_as;
 mod speak;
 mod text;
 mod unit;
@@ -46,16 +47,16 @@ mod xml;
 
 pub(crate) use self::error::error;
 pub use self::{
-	audio::{audio, Audio, AudioRepeat},
-	r#break::{breaks, Break, BreakStrength},
+	audio::{Audio, AudioRepeat, audio},
+	r#break::{Break, BreakStrength, breaks},
 	element::{DynElement, Element},
-	emphasis::{emphasis, Emphasis, EmphasisLevel},
+	emphasis::{Emphasis, EmphasisLevel, emphasis},
 	error::{Error, Result},
-	mark::{mark, Mark},
-	speak::{speak, Speak},
-	text::{text, Text},
+	mark::{Mark, mark},
+	speak::{Speak, speak},
+	text::{Text, text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
-	voice::{voice, Voice, VoiceConfig, VoiceGender},
+	voice::{Voice, VoiceConfig, VoiceGender, voice},
 	xml::XmlWriter
 };
 

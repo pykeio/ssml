@@ -1,4 +1,4 @@
-use crate::{mstts, Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice};
+use crate::{Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice, mstts};
 
 pub trait VisitMut<'s> {
 	fn visit_speak_mut(&mut self, node: &'s mut Speak) {

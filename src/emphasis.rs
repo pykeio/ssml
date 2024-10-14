@@ -49,15 +49,12 @@ impl Emphasis {
 impl Serialize for Emphasis {
 	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.element("emphasis", |writer| {
-			writer.attr(
-				"level",
-				match self.level {
-					EmphasisLevel::Reduced => "reduced",
-					EmphasisLevel::None => "none",
-					EmphasisLevel::Moderate => "moderate",
-					EmphasisLevel::Strong => "strong"
-				}
-			)
+			writer.attr("level", match self.level {
+				EmphasisLevel::Reduced => "reduced",
+				EmphasisLevel::None => "none",
+				EmphasisLevel::Moderate => "moderate",
+				EmphasisLevel::Strong => "strong"
+			})
 		})
 	}
 }

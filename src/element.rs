@@ -188,15 +188,10 @@ impl<'a> serde::Deserialize<'a> for Element {
 
 		#[doc(hidden)]
 		const VARIANTS: &[&str] = &["Text", "Audio", "Voice", "Meta", "Break", "Emphasis", "Mark"];
-		serde::Deserializer::deserialize_enum(
-			deserializer,
-			"Element",
-			VARIANTS,
-			Visitor {
-				marker: serde::__private::PhantomData::<Element>,
-				lifetime: serde::__private::PhantomData
-			}
-		)
+		serde::Deserializer::deserialize_enum(deserializer, "Element", VARIANTS, Visitor {
+			marker: serde::__private::PhantomData::<Element>,
+			lifetime: serde::__private::PhantomData
+		})
 	}
 }
 
@@ -244,10 +239,10 @@ impl<T: ToString> From<T> for Element {
 /// }
 ///
 /// # fn main() -> ssml::Result<()> {
-/// let doc = ssml::speak(
-/// 	Some("en-US"),
-/// 	[TomfooleryElement::new(2.0, ["Approaching dangerous levels of tomfoolery!"]).into_dyn()]
-/// );
+/// let doc = ssml::speak(Some("en-US"), [TomfooleryElement::new(2.0, [
+/// 	"Approaching dangerous levels of tomfoolery!"
+/// ])
+/// .into_dyn()]);
 /// let str = doc.serialize_to_string(&ssml::SerializeOptions::default().pretty())?;
 /// assert_eq!(
 /// 	str,

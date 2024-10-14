@@ -2,10 +2,10 @@
 
 use std::fmt::Display;
 
-use crate::{voice::Voice, Flavor, Meta};
+use crate::{Flavor, Meta, voice::Voice};
 
 pub mod express;
-pub use self::express::{express, Express};
+pub use self::express::{Express, express};
 
 crate::element::el! {
 	#[derive(Debug, Clone)]

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{util, Element, Flavor, Serialize, SerializeOptions, XmlWriter};
+use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
 /// The root element of an SSML document.
 #[derive(Default, Debug)]

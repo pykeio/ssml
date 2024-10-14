@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{util, Element, Serialize, SerializeOptions, XmlWriter};
+use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

@@ -1,6 +1,7 @@
 use crate::{
+	Element, Flavor, Serialize, SerializeOptions, XmlWriter,
 	unit::{Decibels, TimeDesignation},
-	util, Element, Flavor, Serialize, SerializeOptions, XmlWriter
+	util
 };
 
 /// Specify repeating an [`Audio`] element's playback for a certain number of times, or for a determined duration.

@@ -32,7 +32,7 @@
 //! # }
 //! ```
 
-use crate::{mstts, Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice};
+use crate::{Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice, mstts};
 
 pub trait Visit<'s> {
 	fn visit_speak(&mut self, node: &'s Speak) {

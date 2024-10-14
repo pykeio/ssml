@@ -1,4 +1,4 @@
-use crate::{util, Element, Flavor, Serialize, SerializeOptions, XmlWriter};
+use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
 /// A generic expression for use in [`Express`]. Contains the name of the expression and the intensity/degree (default
 /// `1.0`).
