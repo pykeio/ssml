@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Write};
 
 use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
@@ -94,7 +94,7 @@ impl Speak {
 }
 
 impl Serialize for Speak {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks && self.lang.is_none() && options.flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
 			return Err(crate::error!("{:?} requires a language to be set", options.flavor))?;
 		}

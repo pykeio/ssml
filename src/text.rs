@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{Serialize, SerializeOptions, XmlWriter};
 
 /// A non-marked-up string of text for use as a spoken element.
@@ -12,7 +14,7 @@ impl<T: ToString> From<T> for Text {
 }
 
 impl Serialize for Text {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.text(&self.0)
 	}
 }

@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{Serialize, SerializeOptions, TimeDesignation, XmlWriter};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,7 +47,7 @@ where
 }
 
 impl Serialize for Break {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.element("break", |writer| match self {
 			Break::Strength(strength) => writer.attr("strength", match strength {
 				BreakStrength::None => "none",
@@ -55,7 +57,7 @@ impl Serialize for Break {
 				BreakStrength::Strong => "strong",
 				BreakStrength::ExtraStrong => "x-strong"
 			}),
-			Break::Time(time) => writer.attr("time", time.to_string())
+			Break::Time(time) => writer.attr("time", time)
 		})
 	}
 }

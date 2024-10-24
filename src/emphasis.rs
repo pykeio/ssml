@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{Element, Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -47,7 +49,7 @@ impl Emphasis {
 }
 
 impl Serialize for Emphasis {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.element("emphasis", |writer| {
 			writer.attr("level", match self.level {
 				EmphasisLevel::Reduced => "reduced",

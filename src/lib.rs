@@ -26,7 +26,7 @@
 
 #![allow(clippy::tabs_in_doc_comments)]
 
-use std::{fmt::Debug, io::Write};
+use std::fmt::{Debug, Write};
 
 mod audio;
 mod r#break;
@@ -57,7 +57,7 @@ pub use self::{
 	text::{Text, text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
 	voice::{Voice, VoiceConfig, VoiceGender, voice},
-	xml::XmlWriter
+	xml::{EscapedDisplay, XmlWriter}
 };
 
 /// Vendor-specific flavor of SSML. Specifying this can be used to enable compatibility checks & add additional
@@ -150,13 +150,13 @@ pub trait Serialize {
 	}
 
 	/// Serialize this SSML element into an [`XmlWriter`].
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()>;
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()>;
 
 	/// Serialize this SSML element into a string.
 	fn serialize_to_string(&self, options: &SerializeOptions) -> crate::Result<String> {
-		let mut write = Vec::new();
-		self.serialize(&mut write, options)?;
-		Ok(std::str::from_utf8(&write)?.to_owned())
+		let mut out = String::new();
+		self.serialize(&mut out, options)?;
+		Ok(out)
 	}
 }
 
@@ -193,7 +193,7 @@ impl Meta {
 }
 
 impl Serialize for Meta {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks {
 			if let Some(flavors) = self.restrict_flavor.as_ref() {
 				if !flavors.iter().any(|f| f == &options.flavor) {

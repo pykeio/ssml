@@ -1,11 +1,15 @@
-use std::{error::Error as StdError, fmt::Display, io, str::Utf8Error};
+use std::{
+	error::Error as StdError,
+	fmt::{self, Display},
+	str::Utf8Error
+};
 
 use crate::{DecibelsError, TimeDesignationError};
 
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-	IoError(io::Error),
+	FmtError(fmt::Error),
 	TimeDesignationError(TimeDesignationError),
 	DecibelsError(DecibelsError),
 	AttributesInChildContext,
@@ -26,13 +30,13 @@ macro_rules! impl_from {
 }
 
 impl_from! {
-	IoError => io::Error, Utf8Error => Utf8Error, TimeDesignationError => TimeDesignationError, DecibelsError => DecibelsError
+	FmtError => fmt::Error, Utf8Error => Utf8Error, TimeDesignationError => TimeDesignationError, DecibelsError => DecibelsError
 }
 
 impl Display for Error {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
-			Error::IoError(e) => e.fmt(f),
+			Error::FmtError(e) => e.fmt(f),
 			Error::Utf8Error(e) => e.fmt(f),
 			Error::TimeDesignationError(e) => e.fmt(f),
 			Error::DecibelsError(e) => e.fmt(f),

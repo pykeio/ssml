@@ -1,7 +1,10 @@
+use std::fmt::{Display, Write};
+
 use crate::{
 	Element, Flavor, Serialize, SerializeOptions, XmlWriter,
 	unit::{Decibels, TimeDesignation},
-	util
+	util,
+	xml::TrustedNoEscape
 };
 
 /// Specify repeating an [`Audio`] element's playback for a certain number of times, or for a determined duration.
@@ -148,7 +151,7 @@ impl Audio {
 }
 
 impl Serialize for Audio {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks {
 			if options.flavor == Flavor::GoogleCloudTextToSpeech && self.src.is_empty() {
 				// https://cloud.google.com/text-to-speech/docs/ssml#attributes_1
@@ -169,18 +172,18 @@ impl Serialize for Audio {
 		writer.element("audio", |writer| {
 			writer.attr("src", &self.src)?;
 
-			writer.attr_opt("clipBegin", self.clip.0.as_ref().map(|t| t.to_string()))?;
-			writer.attr_opt("clipEnd", self.clip.1.as_ref().map(|t| t.to_string()))?;
+			writer.attr_opt("clipBegin", self.clip.0.as_ref())?;
+			writer.attr_opt("clipEnd", self.clip.1.as_ref())?;
 
 			if let Some(repeat) = &self.repeat {
 				match repeat {
-					AudioRepeat::Duration(dur) => writer.attr("repeatDur", dur.to_string())?,
-					AudioRepeat::Times(times) => writer.attr("times", times.to_string())?
+					AudioRepeat::Duration(dur) => writer.attr("repeatDur", dur)?,
+					AudioRepeat::Times(times) => writer.attr("times", times)?
 				}
 			}
 
-			writer.attr_opt("soundLevel", self.sound_level.as_ref().map(|t| t.to_string()))?;
-			writer.attr_opt("speed", self.speed.map(|s| format!("{}%", s * 100.)))?;
+			writer.attr_opt("soundLevel", self.sound_level.as_ref().map(|t| t))?;
+			writer.attr_opt("speed", self.speed.map(|s| SpeedFormatter(s)))?;
 
 			if let Some(desc) = &self.desc {
 				writer.element("desc", |writer| writer.text(desc))?;
@@ -202,6 +205,14 @@ impl Serialize for Audio {
 pub fn audio(src: impl ToString) -> Audio {
 	Audio::new(src)
 }
+
+struct SpeedFormatter(f32);
+impl Display for SpeedFormatter {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_fmt(format_args!("{}%", self.0 * 100.))
+	}
+}
+impl TrustedNoEscape for SpeedFormatter {}
 
 #[cfg(test)]
 mod tests {

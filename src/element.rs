@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Write};
 
 use dyn_clone::DynClone;
 
@@ -29,7 +29,7 @@ macro_rules! el {
 		})*
 
 		impl $crate::Serialize for $name {
-			fn serialize_xml(&self, writer: &mut $crate::XmlWriter<'_>, options: &$crate::SerializeOptions) -> crate::Result<()> {
+			fn serialize_xml<W: ::std::fmt::Write>(&self, writer: &mut $crate::XmlWriter<W>, options: &$crate::SerializeOptions) -> crate::Result<()> {
 				match self {
 					$($name::$variant(inner) => inner.serialize_xml(writer, options),)*
 				}
@@ -204,6 +204,8 @@ impl<T: ToString> From<T> for Element {
 /// A dynamic element which can be used to implement non-standard SSML elements outside of the `ssml` crate.
 ///
 /// ```
+/// use std::fmt;
+///
 /// use ssml::{DynElement, Element, Serialize, SerializeOptions, XmlWriter};
 ///
 /// #[derive(Debug, Clone)]
@@ -230,7 +232,11 @@ impl<T: ToString> From<T> for Element {
 /// }
 ///
 /// impl DynElement for TomfooleryElement {
-/// 	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> ssml::Result<()> {
+/// 	fn serialize_xml(
+/// 		&self,
+/// 		writer: &mut XmlWriter<&mut dyn fmt::Write>,
+/// 		options: &SerializeOptions
+/// 	) -> ssml::Result<()> {
 /// 		writer.element("tomfoolery", |writer| {
 /// 			writer.attr("influence", self.value.to_string())?;
 /// 			ssml::util::serialize_elements(writer, &self.children, options)
@@ -260,7 +266,7 @@ pub trait DynElement: Debug + DynClone + Send + OptionalErasedSerialize {
 	/// Serialize this dynamic element into an [`XmlWriter`].
 	///
 	/// See [`Serialize::serialize_xml`] for more information.
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()>;
+	fn serialize_xml(&self, writer: &mut XmlWriter<&mut dyn Write>, options: &SerializeOptions) -> crate::Result<()>;
 
 	/// An optional tag representing this dynamic element.
 	fn tag_name(&self) -> Option<&str> {
@@ -294,8 +300,13 @@ impl<T> OptionalErasedSerialize for T {}
 dyn_clone::clone_trait_object!(DynElement);
 
 impl Serialize for Box<dyn DynElement> {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
-		DynElement::serialize_xml(self.as_ref(), writer, options)?;
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
+		let state = {
+			let mut as_dyn = writer.to_dyn();
+			DynElement::serialize_xml(self.as_ref(), &mut as_dyn, options)?;
+			as_dyn.into_state()
+		};
+		writer.synchronize_state(state);
 		Ok(())
 	}
 }

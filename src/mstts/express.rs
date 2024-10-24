@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
 /// A generic expression for use in [`Express`]. Contains the name of the expression and the intensity/degree (default
@@ -196,14 +198,14 @@ impl From<Express> for crate::Element {
 }
 
 impl Serialize for Express {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks && options.flavor != Flavor::MicrosoftAzureCognitiveSpeechServices {
 			return Err(crate::error!("`mstts::Express` is only supported in ACSS/MSTTS"));
 		}
 
 		writer.element("mstts:express-as", |writer| {
 			writer.attr("style", &self.expression.0)?;
-			writer.attr("styledegree", self.expression.1.to_string())?;
+			writer.attr("styledegree", self.expression.1)?;
 			util::serialize_elements(writer, &self.children, options)
 		})
 	}

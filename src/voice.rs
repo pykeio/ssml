@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 
-use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
+use crate::{Element, Serialize, SerializeOptions, XmlWriter, util, xml::TrustedNoEscape};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -22,6 +22,7 @@ impl Display for VoiceGender {
 		})
 	}
 }
+impl TrustedNoEscape for VoiceGender {}
 
 /// Configuration for the [`Voice`] element.
 #[derive(Default, Debug, Clone)]
@@ -55,9 +56,9 @@ impl<S: ToString> From<S> for VoiceConfig {
 }
 
 impl Serialize for VoiceConfig {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
-		writer.attr_opt("gender", self.gender.as_ref().map(|c| c.to_string()))?;
-		writer.attr_opt("age", self.age.as_ref().map(|c| c.to_string()))?;
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
+		writer.attr_opt("gender", self.gender.as_ref())?;
+		writer.attr_opt("age", self.age.as_ref())?;
 		writer.attr_opt("name", self.names.as_ref().map(|c| c.join(" ")))?;
 		writer.attr_opt("variant", self.variant.as_ref())?;
 		writer.attr_opt("language", self.languages.as_ref().map(|c| c.join(" ")))
@@ -184,7 +185,7 @@ impl Voice {
 }
 
 impl Serialize for Voice {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, options: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		writer.element("voice", |writer| {
 			self.config.serialize_xml(writer, options)?;
 			for attr in &self.attrs {

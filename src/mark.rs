@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::{Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Debug, Clone)]
@@ -17,7 +19,7 @@ impl Mark {
 }
 
 impl Serialize for Mark {
-	fn serialize_xml(&self, writer: &mut XmlWriter<'_>, _: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.element("mark", |writer| writer.attr("name", &self.name))
 	}
 }

@@ -5,6 +5,8 @@ use std::{
 	str::FromStr
 };
 
+use crate::xml::TrustedNoEscape;
+
 #[derive(Debug, PartialEq)]
 pub enum TimeDesignationError {
 	BadUnit,
@@ -99,6 +101,7 @@ impl Display for TimeDesignation {
 		f.write_fmt(format_args!("{:+}ms", self.as_millis()))
 	}
 }
+impl TrustedNoEscape for TimeDesignation {}
 
 impl Debug for TimeDesignation {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -180,6 +183,7 @@ impl Display for Decibels {
 		f.write_fmt(format_args!("{:+}dB", self.0))
 	}
 }
+impl TrustedNoEscape for Decibels {}
 
 impl Debug for Decibels {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

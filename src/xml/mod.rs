@@ -1,2 +1,3 @@
 mod writer;
-pub use self::writer::XmlWriter;
+pub(crate) use self::writer::TrustedNoEscape;
+pub use self::writer::{EscapedDisplay, XmlWriter};
