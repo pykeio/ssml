@@ -1,4 +1,8 @@
-use std::fmt::{Debug, Write};
+use alloc::{
+	string::{String, ToString},
+	vec::Vec
+};
+use core::fmt::{Debug, Write};
 
 use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
@@ -23,7 +27,7 @@ impl Speak {
 	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Self {
 		Self {
 			children: elements.into_iter().map(|f| f.into()).collect(),
-			lang: lang.map(|f| f.to_owned()),
+			lang: lang.map(|f| f.to_string()),
 			..Speak::default()
 		}
 	}
@@ -142,7 +146,7 @@ impl Serialize for Speak {
 pub fn speak<S: Into<Element>, I: IntoIterator<Item = S>>(lang: Option<&str>, elements: I) -> Speak {
 	Speak {
 		children: elements.into_iter().map(|f| f.into()).collect(),
-		lang: lang.map(|f| f.to_owned()),
+		lang: lang.map(|f| f.to_string()),
 		..Speak::default()
 	}
 }

@@ -1,4 +1,5 @@
-use std::fmt::{self, Display, Write};
+use alloc::string::{String, ToString};
+use core::fmt::{self, Display, Write};
 
 use crate::util;
 

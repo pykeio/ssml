@@ -1,5 +1,5 @@
-use std::{
-	error::Error as StdError,
+use alloc::string::String;
+use core::{
 	fmt::{self, Display},
 	str::Utf8Error
 };
@@ -46,16 +46,17 @@ impl Display for Error {
 	}
 }
 
-impl StdError for Error {}
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 macro_rules! error {
 	($m:literal) => {
-		$crate::Error::Generic(format!($m))
+		$crate::Error::Generic(::alloc::format!($m))
 	};
 	($fmt:expr, $($arg:tt)*) => {
-		$crate::Error::Generic(format!($fmt, $($arg)*))
+		$crate::Error::Generic(::alloc::format!($fmt, $($arg)*))
 	};
 }
 pub(crate) use error;

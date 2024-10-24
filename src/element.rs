@@ -1,4 +1,5 @@
-use std::fmt::{Debug, Write};
+use alloc::{boxed::Box, string::ToString, vec::Vec};
+use core::fmt::{Debug, Write};
 
 use dyn_clone::DynClone;
 
@@ -29,7 +30,7 @@ macro_rules! el {
 		})*
 
 		impl $crate::Serialize for $name {
-			fn serialize_xml<W: ::std::fmt::Write>(&self, writer: &mut $crate::XmlWriter<W>, options: &$crate::SerializeOptions) -> crate::Result<()> {
+			fn serialize_xml<W: ::core::fmt::Write>(&self, writer: &mut $crate::XmlWriter<W>, options: &$crate::SerializeOptions) -> $crate::Result<()> {
 				match self {
 					$($name::$variant(inner) => inner.serialize_xml(writer, options),)*
 				}
@@ -73,6 +74,9 @@ impl<'a> serde::Deserialize<'a> for Element {
 	where
 		D: serde::Deserializer<'a>
 	{
+		use alloc::string::String;
+		use core::{fmt, marker::PhantomData};
+
 		#[allow(non_camel_case_types)]
 		enum ElementField {
 			Text,
@@ -89,7 +93,7 @@ impl<'a> serde::Deserialize<'a> for Element {
 		impl<'de> serde::de::Visitor<'de> for ElementFieldVisitor {
 			type Value = ElementField;
 
-			fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+			fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
 				f.write_str("variant identifier")
 			}
 
@@ -160,13 +164,13 @@ impl<'a> serde::Deserialize<'a> for Element {
 
 		#[doc(hidden)]
 		struct Visitor<'de> {
-			marker: std::marker::PhantomData<Element>,
-			lifetime: std::marker::PhantomData<&'de ()>
+			marker: PhantomData<Element>,
+			lifetime: PhantomData<&'de ()>
 		}
 		impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
 			type Value = Element;
 
-			fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+			fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
 				f.write_str("enum Element")
 			}
 

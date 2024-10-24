@@ -1,4 +1,5 @@
-use std::fmt::Write;
+use alloc::{string::String, vec::Vec};
+use core::fmt::Write;
 
 use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 

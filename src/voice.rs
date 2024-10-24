@@ -1,4 +1,9 @@
-use std::fmt::{Display, Write};
+use alloc::{
+	string::{String, ToString},
+	vec,
+	vec::Vec
+};
+use core::fmt::{self, Display, Write};
 
 use crate::{Element, Serialize, SerializeOptions, XmlWriter, util, xml::TrustedNoEscape};
 
@@ -13,7 +18,7 @@ pub enum VoiceGender {
 }
 
 impl Display for VoiceGender {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(match self {
 			VoiceGender::Unspecified => "",
 			VoiceGender::Neutral => "neutral",

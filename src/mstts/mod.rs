@@ -1,6 +1,7 @@
 //! Elements exclusive to [`Flavor::MicrosoftAzureCognitiveSpeechServices`] (ACSS/MSTTS).
 
-use std::fmt::Display;
+use alloc::{format, string::ToString};
+use core::fmt::{self, Display};
 
 use crate::{Flavor, Meta, voice::Voice};
 
@@ -27,7 +28,7 @@ pub enum MicrosoftViseme {
 }
 
 impl Display for MicrosoftViseme {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(match self {
 			MicrosoftViseme::ById => "redlips_front",
 			MicrosoftViseme::FacialExpression => "FacialExpression"
@@ -56,7 +57,7 @@ pub enum MicrosoftVoiceEffect {
 }
 
 impl Display for MicrosoftVoiceEffect {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(match self {
 			MicrosoftVoiceEffect::Automobile => "eq_car",
 			MicrosoftVoiceEffect::Telecom => "eq_telecomhp8k"

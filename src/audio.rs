@@ -1,4 +1,8 @@
-use std::fmt::{Display, Write};
+use alloc::{
+	string::{String, ToString},
+	vec::Vec
+};
+use core::fmt::{self, Display, Write};
 
 use crate::{
 	Element, Flavor, Serialize, SerializeOptions, XmlWriter,
@@ -208,7 +212,7 @@ pub fn audio(src: impl ToString) -> Audio {
 
 struct SpeedFormatter(f32);
 impl Display for SpeedFormatter {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_fmt(format_args!("{}%", self.0 * 100.))
 	}
 }

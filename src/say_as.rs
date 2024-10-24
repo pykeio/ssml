@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 pub(crate) trait SpeechFormat {
 	fn into_format(self) -> (String, Option<String>, Option<String>);
 }

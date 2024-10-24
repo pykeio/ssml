@@ -30,11 +30,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install stable Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - name: Run tests
         run: |
           cargo test --verbose
+  check-no-std:
+    name: Check no-std
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v1
+      - name: Run checks
+        run: |
+          cargo check --no-default-features

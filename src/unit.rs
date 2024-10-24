@@ -1,6 +1,5 @@
-use std::{
-	error::Error,
-	fmt::{Debug, Display},
+use core::{
+	fmt::{self, Debug, Display},
 	num::ParseFloatError,
 	str::FromStr
 };
@@ -16,7 +15,7 @@ pub enum TimeDesignationError {
 }
 
 impl Display for TimeDesignationError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			TimeDesignationError::BadUnit => f.write_str("time designation has invalid unit (allowed are ms, s)"),
 			TimeDesignationError::BadLength => f.write_str("string is too short to be a valid time designation"),
@@ -26,7 +25,8 @@ impl Display for TimeDesignationError {
 	}
 }
 
-impl Error for TimeDesignationError {}
+#[cfg(feature = "std")]
+impl std::error::Error for TimeDesignationError {}
 
 /// A time designation is a representation of a non-negative offset of time.
 ///
@@ -97,14 +97,14 @@ impl From<&str> for TimeDesignation {
 }
 
 impl Display for TimeDesignation {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_fmt(format_args!("{:+}ms", self.as_millis()))
 	}
 }
 impl TrustedNoEscape for TimeDesignation {}
 
 impl Debug for TimeDesignation {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		Display::fmt(self, f)
 	}
 }
@@ -117,7 +117,7 @@ pub enum DecibelsError {
 }
 
 impl Display for DecibelsError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			DecibelsError::BadUnit => f.write_str("decibels has invalid unit (allowed are dB)"),
 			DecibelsError::BadLength => f.write_str("string is too short to be a valid decibel value"),
@@ -126,7 +126,8 @@ impl Display for DecibelsError {
 	}
 }
 
-impl Error for DecibelsError {}
+#[cfg(feature = "std")]
+impl std::error::Error for DecibelsError {}
 
 /// A string representation of a signed amplitude offset in decibels (`dB`).
 ///
@@ -179,14 +180,14 @@ impl From<&str> for Decibels {
 }
 
 impl Display for Decibels {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_fmt(format_args!("{:+}dB", self.0))
 	}
 }
 impl TrustedNoEscape for Decibels {}
 
 impl Debug for Decibels {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		Display::fmt(self, f)
 	}
 }

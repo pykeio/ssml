@@ -1,6 +1,7 @@
 //! Utilities for serializing XML.
 
-use std::fmt::{self, Write};
+use alloc::string::String;
+use core::fmt::{self, Write};
 
 use crate::{Element, Serialize, SerializeOptions, XmlWriter};
 

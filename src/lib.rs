@@ -24,9 +24,17 @@
 //! # }
 //! ```
 
+#![cfg_attr(all(not(feature = "std"), not(test)), no_std)]
 #![allow(clippy::tabs_in_doc_comments)]
 
-use std::fmt::{Debug, Write};
+extern crate alloc;
+extern crate core;
+
+use alloc::{
+	string::{String, ToString},
+	vec::Vec
+};
+use core::fmt::{Debug, Write};
 
 mod audio;
 mod r#break;

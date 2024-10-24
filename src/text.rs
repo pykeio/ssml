@@ -1,4 +1,5 @@
-use std::fmt::Write;
+use alloc::string::{String, ToString};
+use core::fmt::Write;
 
 use crate::{Serialize, SerializeOptions, XmlWriter};
 
