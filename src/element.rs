@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, string::ToString, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, vec::Vec};
 use core::fmt::{Debug, Write};
 
 use dyn_clone::DynClone;
@@ -8,7 +8,7 @@ use crate::{Audio, Break, Emphasis, Mark, Meta, Serialize, SerializeOptions, Tex
 macro_rules! el {
 	(
 		$(#[$outer:meta])*
-		pub enum $name:ident {
+		pub enum $name:ident<'s> {
 			$(
 				$(#[$innermeta:meta])*
 				$variant:ident($inner:ty)
@@ -16,20 +16,20 @@ macro_rules! el {
 		}
 	) => {
 		$(#[$outer])*
-		pub enum $name {
+		pub enum $name<'s> {
 			$(
 				$(#[$innermeta])*
 				$variant($inner)
 			),*
 		}
 
-		$(impl From<$inner> for $name {
-			fn from(val: $inner) -> $name {
+		$(impl<'s> From<$inner> for $name<'s> {
+			fn from(val: $inner) -> $name<'s> {
 				$name::$variant(val)
 			}
 		})*
 
-		impl $crate::Serialize for $name {
+		impl<'s> $crate::Serialize for $name<'s> {
 			fn serialize_xml<W: ::core::fmt::Write>(&self, writer: &mut $crate::XmlWriter<W>, options: &$crate::SerializeOptions) -> $crate::Result<()> {
 				match self {
 					$($name::$variant(inner) => inner.serialize_xml(writer, options),)*
@@ -45,15 +45,15 @@ el! {
 	#[derive(Clone, Debug)]
 	#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 	#[non_exhaustive]
-	pub enum Element {
-		Text(Text),
-		Audio(Audio),
-		Voice(Voice),
-		Meta(Meta),
+	pub enum Element<'s> {
+		Text(Text<'s>),
+		Audio(Audio<'s>),
+		Voice(Voice<'s>),
+		Meta(Meta<'s>),
 		Break(Break),
-		Emphasis(Emphasis),
-		Mark(Mark),
-		FlavorMSTTS(crate::mstts::Element),
+		Emphasis(Emphasis<'s>),
+		Mark(Mark<'s>),
+		FlavorMSTTS(crate::mstts::Element<'s>),
 		/// A dyn element can be used to implement your own custom elements outside of the `ssml` crate. See
 		/// [`DynElement`] for more information and examples.
 		Dyn(Box<dyn DynElement>)
@@ -68,8 +68,27 @@ el! {
 	}
 }
 
+impl<'s> Element<'s> {
+	pub fn to_owned(&self) -> Element<'static> {
+		self.clone().into_owned()
+	}
+
+	pub fn into_owned(self) -> Element<'static> {
+		match self {
+			Self::Text(el) => Element::Text(el.into_owned()),
+			Self::Audio(el) => Element::Audio(el.into_owned()),
+			Self::Voice(el) => Element::Voice(el.into_owned()),
+			Self::Meta(el) => Element::Meta(el.into_owned()),
+			Self::Break(el) => Element::Break(el),
+			Self::Emphasis(el) => Element::Emphasis(el.into_owned()),
+			Self::Mark(el) => Element::Mark(el.into_owned()),
+			_ => panic!()
+		}
+	}
+}
+
 #[cfg(feature = "serde")]
-impl<'a> serde::Deserialize<'a> for Element {
+impl<'s, 'a> serde::Deserialize<'a> for Element<'s> {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'a>
@@ -163,12 +182,12 @@ impl<'a> serde::Deserialize<'a> for Element {
 		}
 
 		#[doc(hidden)]
-		struct Visitor<'de> {
-			marker: PhantomData<Element>,
+		struct Visitor<'s, 'de> {
+			marker: PhantomData<Element<'s>>,
 			lifetime: PhantomData<&'de ()>
 		}
-		impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
-			type Value = Element;
+		impl<'s, 'de> serde::de::Visitor<'de> for Visitor<'s, 'de> {
+			type Value = Element<'s>;
 
 			fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
 				f.write_str("enum Element")
@@ -199,9 +218,9 @@ impl<'a> serde::Deserialize<'a> for Element {
 	}
 }
 
-impl<T: ToString> From<T> for Element {
+impl<'s, T: Into<Cow<'s, str>>> From<T> for Element<'s> {
 	fn from(value: T) -> Self {
-		Element::Text(Text(value.to_string()))
+		Element::Text(Text::from(value))
 	}
 }
 
@@ -216,21 +235,21 @@ impl<T: ToString> From<T> for Element {
 /// #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 /// pub struct TomfooleryElement {
 /// 	value: f32,
-/// 	children: Vec<Element>
+/// 	children: Vec<Element<'static>>
 /// }
 ///
 /// impl TomfooleryElement {
 /// 	// Increase the tomfoolery level of a section of elements.
 /// 	// ...
-/// 	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(value: f32, elements: I) -> Self {
+/// 	pub fn new<'s, S: Into<Element<'s>>, I: IntoIterator<Item = S>>(value: f32, elements: I) -> Self {
 /// 		Self {
 /// 			value,
-/// 			children: elements.into_iter().map(|f| f.into()).collect()
+/// 			children: elements.into_iter().map(|f| f.into().into_owned()).collect()
 /// 		}
 /// 	}
 ///
 /// 	// not required, but makes your code much cleaner!
-/// 	pub fn into_dyn(self) -> Element {
+/// 	pub fn into_dyn(self) -> Element<'static> {
 /// 		Element::Dyn(Box::new(self))
 /// 	}
 /// }
@@ -242,7 +261,7 @@ impl<T: ToString> From<T> for Element {
 /// 		options: &SerializeOptions
 /// 	) -> ssml::Result<()> {
 /// 		writer.element("tomfoolery", |writer| {
-/// 			writer.attr("influence", self.value.to_string())?;
+/// 			writer.attr("influence", self.value)?;
 /// 			ssml::util::serialize_elements(writer, &self.children, options)
 /// 		})
 /// 	}

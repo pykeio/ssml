@@ -11,8 +11,8 @@ pub use self::express::{Express, express};
 crate::element::el! {
 	#[derive(Debug, Clone)]
 	#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-	pub enum Element {
-		Express(Express)
+	pub enum Element<'s> {
+		Express(Express<'s>)
 	}
 }
 
@@ -130,7 +130,7 @@ pub trait MicrosoftVoiceExt {
 	fn with_mstts_effect(self, effect: MicrosoftVoiceEffect) -> Self;
 }
 
-impl MicrosoftVoiceExt for Voice {
+impl<'s> MicrosoftVoiceExt for Voice<'s> {
 	fn with_mstts_viseme(mut self, config: MicrosoftViseme) -> Self {
 		self.children.insert(
 			0,
@@ -143,7 +143,7 @@ impl MicrosoftVoiceExt for Voice {
 	}
 
 	fn with_mstts_effect(mut self, effect: MicrosoftVoiceEffect) -> Self {
-		self.attrs.push(("effect".to_string(), effect.to_string()));
+		self.attrs.push(("effect".into(), effect.to_string().into()));
 		self
 	}
 }

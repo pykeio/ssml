@@ -1,7 +1,4 @@
-use alloc::{
-	string::{String, ToString},
-	vec::Vec
-};
+use alloc::{borrow::Cow, string::ToString, vec::Vec};
 use core::fmt::{self, Display, Write};
 
 use crate::{
@@ -28,27 +25,24 @@ pub enum AudioRepeat {
 /// with synthesized speech output.
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Audio {
-	src: String,
-	desc: Option<String>,
-	alternate: Vec<Element>,
+pub struct Audio<'s> {
+	src: Cow<'s, str>,
+	desc: Option<Cow<'s, str>>,
+	alternate: Vec<Element<'s>>,
 	clip: (Option<TimeDesignation>, Option<TimeDesignation>),
 	repeat: Option<AudioRepeat>,
 	sound_level: Option<Decibels>,
 	speed: Option<f32>
 }
 
-impl Audio {
+impl<'s> Audio<'s> {
 	/// Creates a new [`Audio`] element with an audio source URI.
 	///
 	/// ```
 	/// ssml::audio("https://example.com/Congratulations_You_Won.wav");
 	/// ```
-	pub fn new(src: impl ToString) -> Self {
-		Audio {
-			src: src.to_string(),
-			..Audio::default()
-		}
+	pub fn new(src: impl Into<Cow<'s, str>>) -> Self {
+		Audio { src: src.into(), ..Audio::default() }
 	}
 
 	/// Appends alternate (fallback) elements. Alternate elements will be spoken or displayed if the audio document
@@ -59,7 +53,7 @@ impl Audio {
 	/// ```
 	/// ssml::audio("cat_purr.ogg").with_alternate(["PURR (sound didn't load)"]);
 	/// ```
-	pub fn with_alternate<S: Into<Element>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
+	pub fn with_alternate<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(mut self, elements: I) -> Self {
 		self.alternate.extend(elements.into_iter().map(|f| f.into()));
 		self
 	}
@@ -69,8 +63,8 @@ impl Audio {
 	/// ```
 	/// ssml::audio("cat_purr.ogg").with_desc("a purring cat");
 	/// ```
-	pub fn with_desc(mut self, desc: impl ToString) -> Self {
-		self.desc = Some(desc.to_string());
+	pub fn with_desc(mut self, desc: impl Into<Cow<'s, str>>) -> Self {
+		self.desc = Some(desc.into());
 		self
 	}
 
@@ -144,17 +138,40 @@ impl Audio {
 	}
 
 	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
-	pub fn alternate(&self) -> &[Element] {
+	pub fn alternate(&self) -> &[Element<'s>] {
 		&self.alternate
 	}
 
 	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
-	pub fn alternate_mut(&mut self) -> &mut [Element] {
+	pub fn alternate_mut(&mut self) -> &mut [Element<'s>] {
 		&mut self.alternate
+	}
+
+	pub fn to_owned(&self) -> Audio<'static> {
+		self.clone().into_owned()
+	}
+
+	pub fn into_owned(self) -> Audio<'static> {
+		Audio {
+			src: match self.src {
+				Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+				Cow::Owned(b) => Cow::Owned(b)
+			},
+			desc: match self.desc {
+				Some(Cow::Borrowed(b)) => Some(Cow::Owned(b.to_string())),
+				Some(Cow::Owned(b)) => Some(Cow::Owned(b)),
+				None => None
+			},
+			alternate: self.alternate.into_iter().map(Element::into_owned).collect(),
+			clip: self.clip,
+			repeat: self.repeat,
+			sound_level: self.sound_level,
+			speed: self.speed
+		}
 	}
 }
 
-impl Serialize for Audio {
+impl<'s> Serialize for Audio<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks {
 			if options.flavor == Flavor::GoogleCloudTextToSpeech && self.src.is_empty() {
@@ -174,7 +191,7 @@ impl Serialize for Audio {
 		}
 
 		writer.element("audio", |writer| {
-			writer.attr("src", &self.src)?;
+			writer.attr("src", &*self.src)?;
 
 			writer.attr_opt("clipBegin", self.clip.0.as_ref())?;
 			writer.attr_opt("clipEnd", self.clip.1.as_ref())?;
@@ -206,7 +223,7 @@ impl Serialize for Audio {
 /// ```
 /// ssml::audio("https://example.com/Congratulations_You_Won.wav");
 /// ```
-pub fn audio(src: impl ToString) -> Audio {
+pub fn audio<'s>(src: impl Into<Cow<'s, str>>) -> Audio<'s> {
 	Audio::new(src)
 }
 

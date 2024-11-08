@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use core::fmt::{self, Display, Write};
 
 use crate::util;
@@ -19,13 +19,23 @@ pub struct XmlWriter<W> {
 }
 
 pub trait EscapedDisplay: Display {
+	fn escaped_fmt<W: Write>(&self, w: &mut W) -> fmt::Result;
+}
+impl EscapedDisplay for &str {
 	fn escaped_fmt<W: Write>(&self, w: &mut W) -> fmt::Result {
-		util::escape(w, self.to_string())
+		util::escape(w, self)
 	}
 }
-impl EscapedDisplay for &str {}
-impl EscapedDisplay for String {}
-impl EscapedDisplay for &String {}
+impl EscapedDisplay for String {
+	fn escaped_fmt<W: Write>(&self, w: &mut W) -> fmt::Result {
+		util::escape(w, self)
+	}
+}
+impl EscapedDisplay for &String {
+	fn escaped_fmt<W: Write>(&self, w: &mut W) -> fmt::Result {
+		util::escape(w, self)
+	}
+}
 
 pub(crate) trait TrustedNoEscape: Display {}
 impl<T: TrustedNoEscape> EscapedDisplay for T {

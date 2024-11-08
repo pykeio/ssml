@@ -15,7 +15,7 @@
 //! impl<'s> Visit<'s> for VoiceVisitor {
 //! 	fn visit_voice(&mut self, node: &'s ssml::Voice) {
 //! 		if let Some(names) = &node.config().names {
-//! 			self.used_voices.extend(names.iter().cloned());
+//! 			self.used_voices.extend(names.iter().map(|n| n.to_string()));
 //! 		}
 //!
 //! 		// Make sure to call the default implementation so we can also visit children.

@@ -1,8 +1,4 @@
-use alloc::{
-	string::{String, ToString},
-	vec,
-	vec::Vec
-};
+use alloc::{borrow::Cow, string::ToString, vec, vec::Vec};
 use core::fmt::{self, Display, Write};
 
 use crate::{Element, Serialize, SerializeOptions, XmlWriter, util, xml::TrustedNoEscape};
@@ -32,40 +28,72 @@ impl TrustedNoEscape for VoiceGender {}
 /// Configuration for the [`Voice`] element.
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct VoiceConfig {
+pub struct VoiceConfig<'s> {
 	pub gender: Option<VoiceGender>,
 	pub age: Option<u8>,
-	pub names: Option<Vec<String>>,
-	pub variant: Option<String>,
-	pub languages: Option<Vec<String>>
+	pub names: Option<Vec<Cow<'s, str>>>,
+	pub variant: Option<Cow<'s, str>>,
+	pub languages: Option<Vec<Cow<'s, str>>>
 }
 
-impl VoiceConfig {
+impl<'s> VoiceConfig<'s> {
 	/// Creates a new [`VoiceConfig`] with the specified voice name and no other attributes.
 	///
 	/// ```
 	/// let doc = ssml::VoiceConfig::named("en-US-JennyNeural");
 	/// ```
-	pub fn named(name: impl ToString) -> Self {
+	pub fn named(name: impl Into<Cow<'s, str>>) -> Self {
 		Self {
-			names: Some(vec![name.to_string()]),
+			names: Some(vec![name.into()]),
 			..VoiceConfig::default()
+		}
+	}
+
+	pub fn to_owned(&self) -> VoiceConfig<'static> {
+		self.clone().into_owned()
+	}
+
+	pub fn into_owned(self) -> VoiceConfig<'static> {
+		VoiceConfig {
+			gender: self.gender.clone(),
+			age: self.age.clone(),
+			names: self.names.map(|n| {
+				n.into_iter()
+					.map(|s| match s {
+						Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+						Cow::Owned(b) => Cow::Owned(b)
+					})
+					.collect()
+			}),
+			variant: match self.variant {
+				Some(Cow::Borrowed(b)) => Some(Cow::Owned(b.to_string())),
+				Some(Cow::Owned(b)) => Some(Cow::Owned(b)),
+				None => None
+			},
+			languages: self.languages.map(|n| {
+				n.into_iter()
+					.map(|s| match s {
+						Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+						Cow::Owned(b) => Cow::Owned(b)
+					})
+					.collect()
+			})
 		}
 	}
 }
 
-impl<S: ToString> From<S> for VoiceConfig {
+impl<'s, S: Into<Cow<'s, str>>> From<S> for VoiceConfig<'s> {
 	fn from(value: S) -> Self {
 		VoiceConfig::named(value)
 	}
 }
 
-impl Serialize for VoiceConfig {
+impl<'s> Serialize for VoiceConfig<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.attr_opt("gender", self.gender.as_ref())?;
 		writer.attr_opt("age", self.age.as_ref())?;
 		writer.attr_opt("name", self.names.as_ref().map(|c| c.join(" ")))?;
-		writer.attr_opt("variant", self.variant.as_ref())?;
+		writer.attr_opt("variant", self.variant.as_deref())?;
 		writer.attr_opt("language", self.languages.as_ref().map(|c| c.join(" ")))
 	}
 }
@@ -73,13 +101,13 @@ impl Serialize for VoiceConfig {
 /// The [`Voice`] element allows you to specify a voice or use multiple different voices in one document.
 #[derive(Clone, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Voice {
-	pub(crate) children: Vec<Element>,
-	pub(crate) attrs: Vec<(String, String)>,
-	config: VoiceConfig
+pub struct Voice<'s> {
+	pub(crate) children: Vec<Element<'s>>,
+	pub(crate) attrs: Vec<(Cow<'s, str>, Cow<'s, str>)>,
+	config: VoiceConfig<'s>
 }
 
-impl Voice {
+impl<'s> Voice<'s> {
 	/// Creates a new `voice` element to change the voice of a section of spoken elements.
 	///
 	/// ```
@@ -100,7 +128,7 @@ impl Voice {
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Self {
+	pub fn new<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig<'s>>, elements: I) -> Self {
 		Self {
 			children: elements.into_iter().map(|f| f.into()).collect(),
 			attrs: vec![],
@@ -114,7 +142,7 @@ impl Voice {
 	/// let mut voice = ssml::Voice::default();
 	/// voice = voice.with_voice(ssml::VoiceConfig { age: Some(42), ..Default::default() });
 	/// ```
-	pub fn with_voice(mut self, config: impl Into<VoiceConfig>) -> Self {
+	pub fn with_voice(mut self, config: impl Into<VoiceConfig<'s>>) -> Self {
 		self.config = config.into();
 		self
 	}
@@ -142,7 +170,7 @@ impl Voice {
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn push(&mut self, element: impl Into<Element>) {
+	pub fn push(&mut self, element: impl Into<Element<'s>>) {
 		self.children.push(element.into());
 	}
 
@@ -169,7 +197,7 @@ impl Voice {
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn extend<S: Into<Element>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
+	pub fn extend<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
 		self.children.extend(elements.into_iter().map(|f| f.into()));
 	}
 
@@ -179,22 +207,49 @@ impl Voice {
 	}
 
 	/// Returns a reference to the elements contained within this `voice` section.
-	pub fn children(&self) -> &[Element] {
+	pub fn children(&self) -> &[Element<'s>] {
 		&self.children
 	}
 
 	/// Returns a mutable reference to the elements contained within this `voice` section.
-	pub fn children_mut(&mut self) -> &mut [Element] {
+	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
 		&mut self.children
+	}
+
+	pub fn to_owned(&self) -> Voice<'static> {
+		self.clone().into_owned()
+	}
+
+	pub fn into_owned(self) -> Voice<'static> {
+		Voice {
+			children: self.children.into_iter().map(Element::into_owned).collect(),
+			attrs: self
+				.attrs
+				.into_iter()
+				.map(|(k, v)| {
+					(
+						match k {
+							Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+							Cow::Owned(b) => Cow::Owned(b)
+						},
+						match v {
+							Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+							Cow::Owned(b) => Cow::Owned(b)
+						}
+					)
+				})
+				.collect(),
+			config: self.config.into_owned()
+		}
 	}
 }
 
-impl Serialize for Voice {
+impl<'s> Serialize for Voice<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		writer.element("voice", |writer| {
 			self.config.serialize_xml(writer, options)?;
 			for attr in &self.attrs {
-				writer.attr(&attr.0, &attr.1)?;
+				writer.attr(&attr.0, &*attr.1)?;
 			}
 			util::serialize_elements(writer, &self.children, options)
 		})
@@ -221,6 +276,6 @@ impl Serialize for Voice {
 /// # Ok(())
 /// # }
 /// ```
-pub fn voice<S: Into<Element>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig>, elements: I) -> Voice {
+pub fn voice<'s, S: Into<Element<'s>>, I: IntoIterator<Item = S>>(config: impl Into<VoiceConfig<'s>>, elements: I) -> Voice<'s> {
 	Voice::new(config, elements)
 }

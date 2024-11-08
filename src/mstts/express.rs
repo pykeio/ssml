@@ -125,12 +125,12 @@ define_expressions! {
 /// [ms]: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts#voice-styles-and-roles
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Express {
+pub struct Express<'s> {
 	expression: Expression,
-	children: Vec<Element>
+	children: Vec<Element<'s>>
 }
 
-impl Express {
+impl<'s> Express<'s> {
 	/// Creates a new [`Express`] section to modify the speaking style of a section of elements.
 	///
 	/// ```
@@ -159,7 +159,7 @@ impl Express {
 	/// # Ok(())
 	/// # }
 	/// ```
-	pub fn new<S: Into<Element>, I: IntoIterator<Item = S>>(expression: impl Into<Expression>, elements: I) -> Self {
+	pub fn new<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(expression: impl Into<Expression>, elements: I) -> Self {
 		Self {
 			expression: expression.into(),
 			children: elements.into_iter().map(|f| f.into()).collect()
@@ -167,38 +167,38 @@ impl Express {
 	}
 
 	/// Extend this `express-as` section with an additional element.
-	pub fn push(&mut self, element: impl Into<Element>) {
+	pub fn push(&mut self, element: impl Into<Element<'s>>) {
 		self.children.push(element.into());
 	}
 
 	/// Extend this `express-as` section with additional elements.
-	pub fn extend<S: Into<Element>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
+	pub fn extend<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
 		self.children.extend(elements.into_iter().map(|f| f.into()));
 	}
 
 	/// Returns a reference to the elements contained within this `voice` section.
-	pub fn children(&self) -> &[Element] {
+	pub fn children(&self) -> &[Element<'s>] {
 		&self.children
 	}
 
 	/// Returns a mutable reference to the elements contained within this `voice` section.
-	pub fn children_mut(&mut self) -> &mut [Element] {
+	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
 		&mut self.children
 	}
 
 	/// Converts this element into an [`Element`].
-	pub fn into_el(self) -> Element {
+	pub fn into_el(self) -> Element<'s> {
 		Element::FlavorMSTTS(super::Element::Express(self))
 	}
 }
 
-impl From<Express> for crate::Element {
-	fn from(value: Express) -> Self {
+impl<'s> From<Express<'s>> for crate::Element<'s> {
+	fn from(value: Express<'s>) -> Self {
 		value.into_el()
 	}
 }
 
-impl Serialize for Express {
+impl<'s> Serialize for Express<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks && options.flavor != Flavor::MicrosoftAzureCognitiveSpeechServices {
 			return Err(crate::error!("`mstts::Express` is only supported in ACSS/MSTTS"));
@@ -240,6 +240,6 @@ impl Serialize for Express {
 /// # Ok(())
 /// # }
 /// ```
-pub fn express<S: Into<Element>, I: IntoIterator<Item = S>>(expression: impl Into<Expression>, elements: I) -> Express {
+pub fn express<'s, S: Into<Element<'s>>, I: IntoIterator<Item = S>>(expression: impl Into<Expression>, elements: I) -> Express<'s> {
 	Express::new(expression, elements)
 }

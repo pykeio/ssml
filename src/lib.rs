@@ -31,6 +31,7 @@ extern crate alloc;
 extern crate core;
 
 use alloc::{
+	borrow::Cow,
 	string::{String, ToString},
 	vec::Vec
 };
@@ -174,23 +175,23 @@ pub trait Serialize {
 /// XML into the document.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Meta {
-	raw: String,
-	name: Option<String>,
+pub struct Meta<'s> {
+	raw: Cow<'s, str>,
+	name: Option<Cow<'s, str>>,
 	restrict_flavor: Option<Vec<Flavor>>
 }
 
-impl Meta {
-	pub fn new(xml: impl ToString) -> Self {
+impl<'s> Meta<'s> {
+	pub fn new(xml: impl Into<Cow<'s, str>>) -> Self {
 		Meta {
-			raw: xml.to_string(),
+			raw: xml.into(),
 			name: None,
 			restrict_flavor: None
 		}
 	}
 
-	pub fn with_name(mut self, name: impl ToString) -> Self {
-		self.name = Some(name.to_string());
+	pub fn with_name(mut self, name: impl Into<Cow<'s, str>>) -> Self {
+		self.name = Some(name.into());
 		self
 	}
 
@@ -198,9 +199,28 @@ impl Meta {
 		self.restrict_flavor = Some(flavors.into_iter().collect());
 		self
 	}
+
+	pub fn to_owned(&self) -> Meta<'static> {
+		self.clone().into_owned()
+	}
+
+	pub fn into_owned(self) -> Meta<'static> {
+		Meta {
+			raw: match self.raw {
+				Cow::Borrowed(b) => Cow::Owned(b.to_string()),
+				Cow::Owned(b) => Cow::Owned(b)
+			},
+			name: match self.name {
+				Some(Cow::Borrowed(b)) => Some(Cow::Owned(b.to_string())),
+				Some(Cow::Owned(b)) => Some(Cow::Owned(b)),
+				None => None
+			},
+			restrict_flavor: self.restrict_flavor
+		}
+	}
 }
 
-impl Serialize for Meta {
+impl<'s> Serialize for Meta<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		if options.perform_checks {
 			if let Some(flavors) = self.restrict_flavor.as_ref() {
