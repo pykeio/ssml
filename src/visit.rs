@@ -32,7 +32,7 @@
 //! # }
 //! ```
 
-use crate::{Audio, Break, DynElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice, mstts};
+use crate::{Audio, Break, CustomElement, Element, Emphasis, Mark, Meta, Speak, Text, Voice, mstts};
 
 pub trait Visit<'s> {
 	fn visit_speak(&mut self, node: &'s Speak) {
@@ -67,8 +67,8 @@ pub trait Visit<'s> {
 		self::visit_mark(self, node)
 	}
 
-	fn visit_dyn(&mut self, node: &'s dyn DynElement) {
-		self::visit_dyn(self, node)
+	fn visit_custom(&mut self, node: &'s CustomElement) {
+		self::visit_custom(self, node)
 	}
 
 	fn visit_mstts_element(&mut self, node: &'s mstts::Element) {
@@ -110,7 +110,7 @@ pub fn visit_emphasis<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s Emphasis) 
 
 pub fn visit_mark<'s, V: Visit<'s> + ?Sized>(_v: &mut V, _node: &'s Mark) {}
 
-pub fn visit_dyn<'s, V: Visit<'s> + ?Sized>(_v: &mut V, _node: &'s dyn DynElement) {}
+pub fn visit_custom<'s, V: Visit<'s> + ?Sized>(_v: &mut V, _node: &'s CustomElement) {}
 
 pub fn visit_mstts_element<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s mstts::Element) {
 	match node {
@@ -134,7 +134,7 @@ pub fn visit_element<'s, V: Visit<'s> + ?Sized>(v: &mut V, node: &'s Element) {
 		Element::Emphasis(node) => visit_emphasis(v, node),
 		Element::Mark(node) => visit_mark(v, node),
 		Element::FlavorMSTTS(node) => visit_mstts_element(v, node),
-		Element::Dyn(node) => visit_dyn(v, node.as_ref())
+		Element::Custom(node) => visit_custom(v, node)
 	}
 }
 

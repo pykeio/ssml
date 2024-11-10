@@ -58,20 +58,6 @@ impl<W: Write> XmlWriter<W> {
 		}
 	}
 
-	pub(crate) fn to_dyn(&mut self) -> XmlWriter<&'_ mut dyn Write> {
-		XmlWriter {
-			write: &mut self.write as &mut dyn Write,
-			indent_level: self.indent_level,
-			pretty: self.pretty,
-			state: self.state
-		}
-	}
-
-	pub(crate) fn synchronize_state(&mut self, state: (u8, XmlState)) {
-		self.indent_level = state.0;
-		self.state = state.1;
-	}
-
 	fn pretty_break(&mut self) -> crate::Result<()> {
 		if self.pretty {
 			self.write.write_char('\n')?;
@@ -177,11 +163,5 @@ impl<W: Write> XmlWriter<W> {
 		self.state = XmlState::ElementClosed;
 
 		Ok(())
-	}
-}
-
-impl XmlWriter<&mut dyn Write> {
-	pub(crate) fn into_state(self) -> (u8, XmlState) {
-		(self.indent_level, self.state)
 	}
 }

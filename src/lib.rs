@@ -58,7 +58,7 @@ pub(crate) use self::error::error;
 pub use self::{
 	audio::{Audio, AudioRepeat, audio},
 	r#break::{Break, BreakStrength, breaks},
-	element::{DynElement, Element},
+	element::{CustomElement, Element},
 	emphasis::{Emphasis, EmphasisLevel, emphasis},
 	error::{Error, Result},
 	mark::{Mark, mark},
