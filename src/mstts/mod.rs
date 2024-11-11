@@ -3,7 +3,7 @@
 use alloc::{format, string::ToString};
 use core::fmt::{self, Display};
 
-use crate::{Flavor, Meta, voice::Voice};
+use crate::{Meta, voice::Voice};
 
 pub mod express;
 pub use self::express::{Express, express};
@@ -136,7 +136,6 @@ impl<'s> MicrosoftVoiceExt for Voice<'s> {
 			0,
 			Meta::new(format!("<mstts:viseme type=\"{config}\" />"))
 				.with_name("MicrosoftViseme")
-				.with_restrict_flavor([Flavor::MicrosoftAzureCognitiveSpeechServices])
 				.into()
 		);
 		self

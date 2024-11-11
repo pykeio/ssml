@@ -123,10 +123,6 @@ impl<'s> Speak<'s> {
 
 impl<'s> Serialize for Speak<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
-		if options.perform_checks && self.lang.is_none() && options.flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
-			return Err(crate::error!("{:?} requires a language to be set", options.flavor))?;
-		}
-
 		writer.element("speak", |writer| {
 			if matches!(options.flavor, Flavor::Generic | Flavor::MicrosoftAzureCognitiveSpeechServices) {
 				writer.attr("version", "1.0")?;

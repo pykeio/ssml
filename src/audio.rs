@@ -2,7 +2,7 @@ use alloc::{borrow::Cow, string::ToString, vec::Vec};
 use core::fmt::{self, Display, Write};
 
 use crate::{
-	Element, Flavor, Serialize, SerializeOptions, XmlWriter,
+	Element, Serialize, SerializeOptions, XmlWriter,
 	unit::{Decibels, TimeDesignation},
 	util,
 	xml::TrustedNoEscape
@@ -173,23 +173,6 @@ impl<'s> Audio<'s> {
 
 impl<'s> Serialize for Audio<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
-		if options.perform_checks {
-			if options.flavor == Flavor::GoogleCloudTextToSpeech && self.src.is_empty() {
-				// https://cloud.google.com/text-to-speech/docs/ssml#attributes_1
-				return Err(crate::error!("GCTTS requires <audio> elements to have a valid `src`."))?;
-			}
-			if let Some(AudioRepeat::Times(times)) = &self.repeat {
-				if times.is_sign_negative() {
-					return Err(crate::error!("`times` cannot be negative"))?;
-				}
-			}
-			if let Some(speed) = &self.speed {
-				if speed.is_sign_negative() {
-					return Err(crate::error!("`speed` cannot be negative"))?;
-				}
-			}
-		}
-
 		writer.element("audio", |writer| {
 			writer.attr("src", &*self.src)?;
 
@@ -234,29 +217,3 @@ impl Display for SpeedFormatter {
 	}
 }
 impl TrustedNoEscape for SpeedFormatter {}
-
-#[cfg(test)]
-mod tests {
-	use super::{Audio, AudioRepeat};
-	use crate::{Serialize, SerializeOptions};
-
-	#[test]
-	fn non_negative_speed() {
-		assert!(
-			Audio::default()
-				.with_speed(-1.0)
-				.serialize_to_string(&SerializeOptions::default())
-				.is_err()
-		);
-	}
-
-	#[test]
-	fn non_negative_repeat_times() {
-		assert!(
-			Audio::default()
-				.with_repeat(AudioRepeat::Times(-1.0))
-				.serialize_to_string(&SerializeOptions::default())
-				.is_err()
-		);
-	}
-}

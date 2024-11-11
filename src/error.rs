@@ -1,4 +1,3 @@
-use alloc::string::String;
 use core::{
 	fmt::{self, Display},
 	str::Utf8Error
@@ -13,7 +12,6 @@ pub enum Error {
 	TimeDesignationError(TimeDesignationError),
 	DecibelsError(DecibelsError),
 	AttributesInChildContext,
-	Generic(String),
 	Utf8Error(Utf8Error)
 }
 
@@ -40,8 +38,7 @@ impl Display for Error {
 			Error::Utf8Error(e) => e.fmt(f),
 			Error::TimeDesignationError(e) => e.fmt(f),
 			Error::DecibelsError(e) => e.fmt(f),
-			Error::AttributesInChildContext => f.write_str("invalid ordering: attempted to write attributes after writing children"),
-			Error::Generic(s) => f.write_str(s)
+			Error::AttributesInChildContext => f.write_str("invalid ordering: attempted to write attributes after writing children")
 		}
 	}
 }
@@ -50,13 +47,3 @@ impl Display for Error {
 impl std::error::Error for Error {}
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
-
-macro_rules! error {
-	($m:literal) => {
-		$crate::Error::Generic(::alloc::format!($m))
-	};
-	($fmt:expr, $($arg:tt)*) => {
-		$crate::Error::Generic(::alloc::format!($fmt, $($arg)*))
-	};
-}
-pub(crate) use error;

@@ -1,7 +1,7 @@
 use alloc::{string::String, vec::Vec};
 use core::fmt::Write;
 
-use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
+use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
 
 /// A generic expression for use in [`Express`]. Contains the name of the expression and the intensity/degree (default
 /// `1.0`).
@@ -200,10 +200,6 @@ impl<'s> From<Express<'s>> for crate::Element<'s> {
 
 impl<'s> Serialize for Express<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
-		if options.perform_checks && options.flavor != Flavor::MicrosoftAzureCognitiveSpeechServices {
-			return Err(crate::error!("`mstts::Express` is only supported in ACSS/MSTTS"));
-		}
-
 		writer.element("mstts:express-as", |writer| {
 			writer.attr("style", &self.expression.0)?;
 			writer.attr("styledegree", self.expression.1)?;

@@ -32,8 +32,7 @@ extern crate core;
 
 use alloc::{
 	borrow::Cow,
-	string::{String, ToString},
-	vec::Vec
+	string::{String, ToString}
 };
 use core::fmt::{Debug, Write};
 
@@ -54,7 +53,6 @@ pub mod visit_mut;
 mod voice;
 mod xml;
 
-pub(crate) use self::error::error;
 pub use self::{
 	audio::{Audio, AudioRepeat, audio},
 	r#break::{Break, BreakStrength, breaks},
@@ -107,17 +105,14 @@ pub struct SerializeOptions {
 	///
 	/// Generally, this should only be used for debugging. Some providers may charge per SSML character (not just spoken
 	/// character), so enabling this option in production may significantly increase costs.
-	pub pretty: bool,
-	/// Whether or not to perform compatibility checks with the chosen flavor. This is enabled by default.
-	pub perform_checks: bool
+	pub pretty: bool
 }
 
 impl Default for SerializeOptions {
 	fn default() -> Self {
 		SerializeOptions {
 			flavor: Flavor::Generic,
-			pretty: false,
-			perform_checks: true
+			pretty: false
 		}
 	}
 }
@@ -135,16 +130,6 @@ impl SerializeOptions {
 
 	pub fn flavor(mut self, flavor: Flavor) -> Self {
 		self.flavor = flavor;
-		self
-	}
-
-	pub fn perform_checks(mut self) -> Self {
-		self.perform_checks = true;
-		self
-	}
-
-	pub fn no_checks(mut self) -> Self {
-		self.perform_checks = false;
 		self
 	}
 }
@@ -177,26 +162,16 @@ pub trait Serialize {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Meta<'s> {
 	raw: Cow<'s, str>,
-	name: Option<Cow<'s, str>>,
-	restrict_flavor: Option<Vec<Flavor>>
+	name: Option<Cow<'s, str>>
 }
 
 impl<'s> Meta<'s> {
 	pub fn new(xml: impl Into<Cow<'s, str>>) -> Self {
-		Meta {
-			raw: xml.into(),
-			name: None,
-			restrict_flavor: None
-		}
+		Meta { raw: xml.into(), name: None }
 	}
 
 	pub fn with_name(mut self, name: impl Into<Cow<'s, str>>) -> Self {
 		self.name = Some(name.into());
-		self
-	}
-
-	pub fn with_restrict_flavor(mut self, flavors: impl IntoIterator<Item = Flavor>) -> Self {
-		self.restrict_flavor = Some(flavors.into_iter().collect());
 		self
 	}
 
@@ -214,25 +189,13 @@ impl<'s> Meta<'s> {
 				Some(Cow::Borrowed(b)) => Some(Cow::Owned(b.to_string())),
 				Some(Cow::Owned(b)) => Some(Cow::Owned(b)),
 				None => None
-			},
-			restrict_flavor: self.restrict_flavor
+			}
 		}
 	}
 }
 
 impl<'s> Serialize for Meta<'s> {
-	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
-		if options.perform_checks {
-			if let Some(flavors) = self.restrict_flavor.as_ref() {
-				if !flavors.iter().any(|f| f == &options.flavor) {
-					return Err(crate::error!(
-						"{} cannot be used with {:?}",
-						if let Some(name) = &self.name { name } else { "this meta element" },
-						options.flavor
-					));
-				}
-			}
-		}
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
 		writer.raw(&self.raw)
 	}
 }
