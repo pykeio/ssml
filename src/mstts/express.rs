@@ -1,4 +1,4 @@
-use alloc::{string::String, vec::Vec};
+use alloc::{borrow::Cow, vec::Vec};
 use core::fmt::Write;
 
 use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
@@ -7,7 +7,30 @@ use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
 /// `1.0`).
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Expression(String, f32);
+pub struct Expression(Cow<'static, str>, f32);
+
+impl Expression {
+	pub fn new(name: impl Into<Cow<'static, str>>) -> Self {
+		Self(name.into(), 1.0)
+	}
+
+	pub fn name(&self) -> &str {
+		&self.0
+	}
+
+	pub fn degree(&self) -> f32 {
+		self.1
+	}
+
+	pub fn with_degree(mut self, degree: f32) -> Self {
+		self.1 = degree.clamp(0.01, 2.0);
+		self
+	}
+
+	pub fn set_degree(&mut self, degree: f32) {
+		self.1 = degree.clamp(0.01, 2.0);
+	}
+}
 
 macro_rules! define_expressions {
 	($($(#[$outer:meta])* $x:ident => $e:expr),*) => {
@@ -21,7 +44,7 @@ macro_rules! define_expressions {
 
 			impl From<$x> for Expression {
 				fn from(_: $x) -> Expression {
-					Expression(String::from($e), 1.0)
+					Expression(Cow::Borrowed($e), 1.0)
 				}
 			}
 
@@ -32,7 +55,7 @@ macro_rules! define_expressions {
 				/// results in a slight tendency for the target style. A value of `2` results in a doubling of the
 				/// default style intensity.
 				pub fn with_degree(&self, degree: f32) -> Expression {
-					Expression(String::from($e), degree.clamp(0.01, 2.0))
+					Expression(Cow::Borrowed($e), degree.clamp(0.01, 2.0))
 				}
 			}
 		)*
@@ -166,6 +189,14 @@ impl<'s> Express<'s> {
 		}
 	}
 
+	pub fn expression(&self) -> &Expression {
+		&self.expression
+	}
+
+	pub fn set_expression(&mut self, expression: impl Into<Expression>) {
+		self.expression = expression.into();
+	}
+
 	/// Extend this `express-as` section with an additional element.
 	pub fn push(&mut self, element: impl Into<Element<'s>>) {
 		self.children.push(element.into());
@@ -182,7 +213,7 @@ impl<'s> Express<'s> {
 	}
 
 	/// Returns a mutable reference to the elements contained within this `voice` section.
-	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
+	pub fn children_mut(&mut self) -> &mut Vec<Element<'s>> {
 		&mut self.children
 	}
 
@@ -201,7 +232,7 @@ impl<'s> From<Express<'s>> for crate::Element<'s> {
 impl<'s> Serialize for Express<'s> {
 	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		writer.element("mstts:express-as", |writer| {
-			writer.attr("style", &self.expression.0)?;
+			writer.attr("style", &*self.expression.0)?;
 			writer.attr("styledegree", self.expression.1)?;
 			util::serialize_elements(writer, &self.children, options)
 		})

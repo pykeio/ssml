@@ -13,6 +13,14 @@ impl<'s> Text<'s> {
 		self.clone().into_owned()
 	}
 
+	pub fn as_str(&self) -> &str {
+		&*self.0
+	}
+
+	pub fn set(&mut self, text: impl Into<Cow<'s, str>>) {
+		self.0 = text.into();
+	}
+
 	pub fn into_owned(self) -> Text<'static> {
 		Text(match self.0 {
 			Cow::Borrowed(b) => Cow::Owned(b.to_string()),

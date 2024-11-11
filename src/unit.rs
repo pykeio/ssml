@@ -59,8 +59,8 @@ impl TimeDesignation {
 	}
 
 	/// Convert this time designation to milliseconds.
-	pub fn as_millis(&self) -> &f32 {
-		&self.millis
+	pub fn to_millis(&self) -> f32 {
+		self.millis
 	}
 }
 
@@ -98,7 +98,7 @@ impl From<&str> for TimeDesignation {
 
 impl Display for TimeDesignation {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_fmt(format_args!("{:+}ms", self.as_millis()))
+		f.write_fmt(format_args!("{:+}ms", self.to_millis()))
 	}
 }
 impl TrustedNoEscape for TimeDesignation {}
@@ -134,9 +134,9 @@ impl std::error::Error for DecibelsError {}
 /// ```
 /// # use ssml::Decibels;
 /// # fn main() -> ssml::Result<()> {
-/// assert_eq!("+0.0dB".parse::<Decibels>()?, Decibels(0.));
-/// assert_eq!("-6dB".parse::<Decibels>()?, Decibels(-6.));
-/// assert_eq!("2dB".parse::<Decibels>()?, Decibels(2.));
+/// assert_eq!("+0.0dB".parse::<Decibels>()?, Decibels::new(0.));
+/// assert_eq!("-6dB".parse::<Decibels>()?, Decibels::new(-6.));
+/// assert_eq!("2dB".parse::<Decibels>()?, Decibels::new(2.));
 ///
 /// // Fails
 /// assert!("-3DB".parse::<Decibels>().is_err());
@@ -147,7 +147,17 @@ impl std::error::Error for DecibelsError {}
 /// ```
 #[derive(Default, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Decibels(pub f32);
+pub struct Decibels(f32);
+
+impl Decibels {
+	pub fn new(value: f32) -> Self {
+		Self(value)
+	}
+
+	pub fn value(&self) -> f32 {
+		self.0
+	}
+}
 
 impl FromStr for Decibels {
 	type Err = DecibelsError;

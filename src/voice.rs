@@ -140,11 +140,20 @@ impl<'s> Voice<'s> {
 	///
 	/// ```
 	/// let mut voice = ssml::Voice::default();
-	/// voice = voice.with_voice(ssml::VoiceConfig { age: Some(42), ..Default::default() });
+	/// voice = voice.with_config(ssml::VoiceConfig { age: Some(42), ..Default::default() });
 	/// ```
-	pub fn with_voice(mut self, config: impl Into<VoiceConfig<'s>>) -> Self {
+	pub fn with_config(mut self, config: impl Into<VoiceConfig<'s>>) -> Self {
 		self.config = config.into();
 		self
+	}
+
+	/// Returns the voice configuration used by this element.
+	pub fn config(&self) -> &VoiceConfig {
+		&self.config
+	}
+
+	pub fn set_config(&mut self, config: impl Into<VoiceConfig<'s>>) {
+		self.config = config.into();
 	}
 
 	/// Extend this `voice` section with an additional element.
@@ -201,18 +210,13 @@ impl<'s> Voice<'s> {
 		self.children.extend(elements.into_iter().map(|f| f.into()));
 	}
 
-	/// Returns the voice configuration used by this element.
-	pub fn config(&self) -> &VoiceConfig {
-		&self.config
-	}
-
 	/// Returns a reference to the elements contained within this `voice` section.
 	pub fn children(&self) -> &[Element<'s>] {
 		&self.children
 	}
 
 	/// Returns a mutable reference to the elements contained within this `voice` section.
-	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
+	pub fn children_mut(&mut self) -> &mut Vec<Element<'s>> {
 		&mut self.children
 	}
 

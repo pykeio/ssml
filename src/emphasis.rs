@@ -28,24 +28,28 @@ impl<'s> Emphasis<'s> {
 		}
 	}
 
-	pub fn push(&mut self, element: impl Into<Element<'s>>) {
-		self.children.push(element.into());
-	}
-
-	pub fn extend<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
-		self.children.extend(elements.into_iter().map(|f| f.into()));
-	}
-
 	pub fn level(&self) -> &EmphasisLevel {
 		&self.level
+	}
+
+	pub fn set_level(&mut self, level: EmphasisLevel) {
+		self.level = level;
 	}
 
 	pub fn children(&self) -> &[Element<'s>] {
 		&self.children
 	}
 
-	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
+	pub fn children_mut(&mut self) -> &mut Vec<Element<'s>> {
 		&mut self.children
+	}
+
+	pub fn push(&mut self, element: impl Into<Element<'s>>) {
+		self.children.push(element.into());
+	}
+
+	pub fn extend<S: Into<Element<'s>>, I: IntoIterator<Item = S>>(&mut self, elements: I) {
+		self.children.extend(elements.into_iter().map(|f| f.into()));
 	}
 
 	pub fn to_owned(&self) -> Emphasis<'static> {

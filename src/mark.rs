@@ -18,6 +18,10 @@ impl<'s> Mark<'s> {
 		&self.name
 	}
 
+	pub fn set_name(&mut self, name: impl Into<Cow<'s, str>>) {
+		self.name = name.into();
+	}
+
 	pub fn to_owned(&self) -> Mark<'static> {
 		self.clone().into_owned()
 	}

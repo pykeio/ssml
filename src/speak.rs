@@ -34,9 +34,33 @@ impl<'s> Speak<'s> {
 		self
 	}
 
+	pub fn start_mark(&self) -> Option<&str> {
+		self.marks.0.as_deref()
+	}
+
+	pub fn set_start_mark(&mut self, mark: impl Into<Cow<'s, str>>) {
+		self.marks.0 = Some(mark.into());
+	}
+
+	pub fn take_start_mark(&mut self) -> Option<Cow<'s, str>> {
+		self.marks.0.take()
+	}
+
 	pub fn with_end_mark(mut self, mark: impl Into<Cow<'s, str>>) -> Self {
 		self.marks.1 = Some(mark.into());
 		self
+	}
+
+	pub fn end_mark(&self) -> Option<&str> {
+		self.marks.1.as_deref()
+	}
+
+	pub fn set_end_mark(&mut self, mark: impl Into<Cow<'s, str>>) {
+		self.marks.1 = Some(mark.into());
+	}
+
+	pub fn take_end_mark(&mut self) -> Option<Cow<'s, str>> {
+		self.marks.1.take()
 	}
 
 	/// Extend this SSML document with an additional element.
@@ -89,7 +113,7 @@ impl<'s> Speak<'s> {
 	}
 
 	/// Returns a mutable reference to the document's direct children.
-	pub fn children_mut(&mut self) -> &mut [Element<'s>] {
+	pub fn children_mut(&mut self) -> &mut Vec<Element<'s>> {
 		&mut self.children
 	}
 

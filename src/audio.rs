@@ -45,6 +45,14 @@ impl<'s> Audio<'s> {
 		Audio { src: src.into(), ..Audio::default() }
 	}
 
+	pub fn src(&self) -> &str {
+		&self.src
+	}
+
+	pub fn set_src(&mut self, src: impl Into<Cow<'s, str>>) {
+		self.src = src.into();
+	}
+
 	/// Appends alternate (fallback) elements. Alternate elements will be spoken or displayed if the audio document
 	/// located at the specified URI is unavailable for whatever reason.
 	///
@@ -66,6 +74,18 @@ impl<'s> Audio<'s> {
 	pub fn with_desc(mut self, desc: impl Into<Cow<'s, str>>) -> Self {
 		self.desc = Some(desc.into());
 		self
+	}
+
+	pub fn desc(&self) -> Option<&str> {
+		self.desc.as_deref()
+	}
+
+	pub fn set_desc(&mut self, desc: impl Into<Cow<'s, str>>) {
+		self.desc = Some(desc.into());
+	}
+
+	pub fn take_desc(&mut self) -> Option<Cow<'s, str>> {
+		self.desc.take()
 	}
 
 	/// Specify an offset from the beginning and to the end of which to clip this audio's duration to.
@@ -90,6 +110,18 @@ impl<'s> Audio<'s> {
 		self
 	}
 
+	pub fn clip_begin(&self) -> Option<&TimeDesignation> {
+		self.clip.0.as_ref()
+	}
+
+	pub fn set_clip_begin(&mut self, begin: impl Into<TimeDesignation>) {
+		self.clip.0 = Some(begin.into());
+	}
+
+	pub fn take_clip_begin(&mut self) -> Option<TimeDesignation> {
+		self.clip.0.take()
+	}
+
 	/// Specify an offset from the beginning of the audio to end playback.
 	///
 	/// ```
@@ -99,6 +131,18 @@ impl<'s> Audio<'s> {
 	pub fn with_clip_end(mut self, end: impl Into<TimeDesignation>) -> Self {
 		self.clip.1 = Some(end.into());
 		self
+	}
+
+	pub fn clip_end(&self) -> Option<&TimeDesignation> {
+		self.clip.1.as_ref()
+	}
+
+	pub fn set_clip_end(&mut self, end: impl Into<TimeDesignation>) {
+		self.clip.1 = Some(end.into());
+	}
+
+	pub fn take_clip_end(&mut self) -> Option<TimeDesignation> {
+		self.clip.1.take()
 	}
 
 	/// Repeat this audio source for a set amount of times, or for a set duration. See [`AudioRepeat`].
@@ -114,6 +158,18 @@ impl<'s> Audio<'s> {
 		self
 	}
 
+	pub fn repeat(&self) -> Option<&AudioRepeat> {
+		self.repeat.as_ref()
+	}
+
+	pub fn set_repeat(&mut self, repeat: AudioRepeat) {
+		self.repeat = Some(repeat);
+	}
+
+	pub fn take_repeat(&mut self) -> Option<AudioRepeat> {
+		self.repeat.take()
+	}
+
 	/// Specify the relative volume of the referenced audio, in decibels. Setting to a large negative value like
 	/// `-100dB` will effectively silence the audio clip. A value of `-6.0dB` will play the audio at approximately half
 	/// the volume, and likewise `+6.0dB` will play the audio at twice the volume.
@@ -124,6 +180,18 @@ impl<'s> Audio<'s> {
 	pub fn with_sound_level(mut self, db: impl Into<Decibels>) -> Self {
 		self.sound_level = Some(db.into());
 		self
+	}
+
+	pub fn sound_level(&self) -> Option<&Decibels> {
+		self.sound_level.as_ref()
+	}
+
+	pub fn set_sound_level(&mut self, db: impl Into<Decibels>) {
+		self.sound_level = Some(db.into());
+	}
+
+	pub fn take_sound_level(&mut self) -> Option<Decibels> {
+		self.sound_level.take()
 	}
 
 	/// Specify the speed at which to play the audio clip (where `1.0` is normal speed).
@@ -137,13 +205,25 @@ impl<'s> Audio<'s> {
 		self
 	}
 
+	pub fn speed(&self) -> Option<f32> {
+		self.speed
+	}
+
+	pub fn set_speed(&mut self, speed: f32) {
+		self.speed = Some(speed.into());
+	}
+
+	pub fn take_speed(&mut self) -> Option<f32> {
+		self.speed.take()
+	}
+
 	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
 	pub fn alternate(&self) -> &[Element<'s>] {
 		&self.alternate
 	}
 
 	/// Returns a reference to the elements contained in this `audio` element's alternate/fallback section.
-	pub fn alternate_mut(&mut self) -> &mut [Element<'s>] {
+	pub fn alternate_mut(&mut self) -> &mut Vec<Element<'s>> {
 		&mut self.alternate
 	}
 
