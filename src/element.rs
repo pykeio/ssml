@@ -1,7 +1,7 @@
 use alloc::{borrow::Cow, string::ToString, vec::Vec};
 use core::fmt::{Debug, Write};
 
-use crate::{Audio, Break, Emphasis, Mark, Meta, SayAs, Serialize, SerializeOptions, Text, Voice, XmlWriter, util};
+use crate::{Audio, Break, Emphasis, Mark, Meta, SayAs, Serialize, SerializeOptions, Text, Voice, XmlWriter, group::Group, util};
 
 macro_rules! el {
 	(
@@ -52,6 +52,7 @@ el! {
 		Emphasis(Emphasis<'s>),
 		Mark(Mark<'s>),
 		SayAs(SayAs<'s>),
+		Group(Group<'s>),
 		FlavorMSTTS(crate::mstts::Element<'s>),
 		Custom(CustomElement<'s>)
 		// Lang(LangElement),

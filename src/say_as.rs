@@ -1,4 +1,4 @@
-use alloc::borrow::Cow;
+use alloc::{borrow::Cow, boxed::Box};
 use core::fmt::Write;
 
 use crate::{Flavor, Serialize, SerializeOptions, XmlWriter};
@@ -124,7 +124,7 @@ impl<'s> SayAs<'s> {
 
 	pub fn into_owned(self) -> SayAs<'static> {
 		SayAs {
-			format: self.format.to_owned(),
+			format: self.format.clone(),
 			text: match self.text {
 				Cow::Borrowed(b) => Cow::Owned(b.to_string()),
 				Cow::Owned(b) => Cow::Owned(b)

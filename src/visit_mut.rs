@@ -107,7 +107,12 @@ pub fn visit_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut 
 		Element::Mark(node) => visit_mark_mut(v, node),
 		Element::SayAs(node) => visit_say_as_mut(v, node),
 		Element::FlavorMSTTS(node) => visit_mstts_element_mut(v, node),
-		Element::Custom(node) => visit_custom_mut(v, node)
+		Element::Custom(node) => visit_custom_mut(v, node),
+		Element::Group(node) => {
+			for child in node.children_mut() {
+				visit_element_mut(v, child);
+			}
+		}
 	}
 }
 

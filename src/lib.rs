@@ -41,6 +41,7 @@ mod r#break;
 mod element;
 mod emphasis;
 mod error;
+mod group;
 mod mark;
 pub mod mstts;
 mod say_as;
@@ -59,6 +60,7 @@ pub use self::{
 	element::{CustomElement, Element, IntoElement},
 	emphasis::{Emphasis, EmphasisLevel, emphasis},
 	error::{Error, Result},
+	group::{Group, group},
 	mark::{Mark, mark},
 	say_as::{DateFormat, SayAs, SpeechFormat, say_as},
 	speak::{Speak, speak},
