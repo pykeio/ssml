@@ -42,6 +42,7 @@ mod element;
 mod emphasis;
 mod error;
 mod group;
+mod lang;
 mod mark;
 pub mod mstts;
 mod say_as;
@@ -65,6 +66,7 @@ pub use self::{
 	say_as::{DateFormat, SayAs, SpeechFormat, say_as},
 	speak::{Speak, speak},
 	text::{Text, text},
+	lang::{Lang, lang},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
 	voice::{Voice, VoiceConfig, VoiceGender, voice},
 	xml::{EscapedDisplay, XmlWriter}
