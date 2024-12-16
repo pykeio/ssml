@@ -1,7 +1,7 @@
 use alloc::{borrow::Cow, string::ToString};
 use core::fmt::Write;
 
-use crate::{Serialize, SerializeOptions, XmlWriter};
+use crate::{Flavor, Serialize, SerializeOptions, XmlWriter};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -37,8 +37,12 @@ impl<'s> Mark<'s> {
 }
 
 impl<'s> Serialize for Mark<'s> {
-	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
-		writer.element("mark", |writer| writer.attr("name", &*self.name))
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
+		if options.flavor == Flavor::MicrosoftAzureCognitiveSpeechServices {
+			writer.element("bookmark", |writer| writer.attr("mark", &*self.name))
+		} else {
+			writer.element("mark", |writer| writer.attr("name", &*self.name))
+		}
 	}
 }
 
