@@ -56,10 +56,11 @@ mod xml;
 pub use self::{
 	audio::{Audio, AudioRepeat, audio},
 	r#break::{Break, BreakStrength, breaks},
-	element::{CustomElement, Element},
+	element::{CustomElement, Element, IntoElement},
 	emphasis::{Emphasis, EmphasisLevel, emphasis},
 	error::{Error, Result},
 	mark::{Mark, mark},
+	say_as::{DateFormat, SayAs, SpeechFormat, say_as},
 	speak::{Speak, speak},
 	text::{Text, text},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},

@@ -1,7 +1,10 @@
 use alloc::vec::Vec;
-use core::fmt::Write;
+use core::{
+	fmt::Write,
+	ops::{Add, AddAssign}
+};
 
-use crate::{Element, Serialize, SerializeOptions, XmlWriter};
+use crate::{Element, Serialize, SerializeOptions, XmlWriter, util};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -65,15 +68,31 @@ impl<'s> Emphasis<'s> {
 }
 
 impl<'s> Serialize for Emphasis<'s> {
-	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, _: &SerializeOptions) -> crate::Result<()> {
+	fn serialize_xml<W: Write>(&self, writer: &mut XmlWriter<W>, options: &SerializeOptions) -> crate::Result<()> {
 		writer.element("emphasis", |writer| {
 			writer.attr("level", match self.level {
 				EmphasisLevel::Reduced => "reduced",
 				EmphasisLevel::None => "none",
 				EmphasisLevel::Moderate => "moderate",
 				EmphasisLevel::Strong => "strong"
-			})
+			})?;
+			util::serialize_elements(writer, &self.children, options)
 		})
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> Add<T> for Emphasis<'s> {
+	type Output = Emphasis<'s>;
+
+	fn add(mut self, rhs: T) -> Self::Output {
+		self.push(rhs.into());
+		self
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> AddAssign<T> for Emphasis<'s> {
+	fn add_assign(&mut self, rhs: T) {
+		self.push(rhs.into());
 	}
 }
 

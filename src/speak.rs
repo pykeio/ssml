@@ -1,5 +1,8 @@
 use alloc::{borrow::Cow, string::ToString, vec::Vec};
-use core::fmt::{Debug, Write};
+use core::{
+	fmt::{Debug, Write},
+	ops::{Add, AddAssign}
+};
 
 use crate::{Element, Flavor, Serialize, SerializeOptions, XmlWriter, util};
 
@@ -164,6 +167,21 @@ impl<'s> Serialize for Speak<'s> {
 
 			util::serialize_elements(writer, &self.children, options)
 		})
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> Add<T> for Speak<'s> {
+	type Output = Speak<'s>;
+
+	fn add(mut self, rhs: T) -> Self::Output {
+		self.push(rhs.into());
+		self
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> AddAssign<T> for Speak<'s> {
+	fn add_assign(&mut self, rhs: T) {
+		self.push(rhs.into());
 	}
 }
 

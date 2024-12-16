@@ -1,7 +1,7 @@
 use alloc::{borrow::Cow, string::ToString, vec::Vec};
 use core::fmt::{Debug, Write};
 
-use crate::{Audio, Break, Emphasis, Mark, Meta, Serialize, SerializeOptions, Text, Voice, XmlWriter, util};
+use crate::{Audio, Break, Emphasis, Mark, Meta, SayAs, Serialize, SerializeOptions, Text, Voice, XmlWriter, util};
 
 macro_rules! el {
 	(
@@ -51,13 +51,13 @@ el! {
 		Break(Break),
 		Emphasis(Emphasis<'s>),
 		Mark(Mark<'s>),
+		SayAs(SayAs<'s>),
 		FlavorMSTTS(crate::mstts::Element<'s>),
 		Custom(CustomElement<'s>)
 		// Lang(LangElement),
 		// Paragraph(ParagraphElement),
 		// Phoneme(PhonemeElement),
 		// Prosody(ProsodyElement),
-		// SayAs(SayAsElement),
 		// Sub(SubElement),
 		// Sentence(SentenceElement),
 		// Word(WordElement)
@@ -87,6 +87,16 @@ impl<'s> Element<'s> {
 impl<'s, T: Into<Cow<'s, str>>> From<T> for Element<'s> {
 	fn from(value: T) -> Self {
 		Element::Text(Text::from(value))
+	}
+}
+
+pub trait IntoElement<'s> {
+	fn into_element(self) -> Element<'s>;
+}
+
+impl<'s, T: Into<Element<'s>>> IntoElement<'s> for T {
+	fn into_element(self) -> Element<'s> {
+		self.into()
 	}
 }
 

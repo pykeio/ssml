@@ -1,5 +1,8 @@
 use alloc::{borrow::Cow, string::ToString, vec, vec::Vec};
-use core::fmt::{self, Display, Write};
+use core::{
+	fmt::{self, Display, Write},
+	ops::{Add, AddAssign}
+};
 
 use crate::{Element, Serialize, SerializeOptions, XmlWriter, util, xml::TrustedNoEscape};
 
@@ -257,6 +260,21 @@ impl<'s> Serialize for Voice<'s> {
 			}
 			util::serialize_elements(writer, &self.children, options)
 		})
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> Add<T> for Voice<'s> {
+	type Output = Voice<'s>;
+
+	fn add(mut self, rhs: T) -> Self::Output {
+		self.push(rhs.into());
+		self
+	}
+}
+
+impl<'s, 's2: 's, T: Into<Element<'s2>>> AddAssign<T> for Voice<'s> {
+	fn add_assign(&mut self, rhs: T) {
+		self.push(rhs.into());
 	}
 }
 
