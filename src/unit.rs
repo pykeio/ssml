@@ -202,6 +202,14 @@ impl Debug for Decibels {
 	}
 }
 
+pub(crate) struct SpeedFormatter(pub(crate) f32);
+impl Display for SpeedFormatter {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.write_fmt(format_args!("{}%", self.0 * 100.))
+	}
+}
+impl TrustedNoEscape for SpeedFormatter {}
+
 #[cfg(test)]
 mod tests {
 	use super::{Decibels, TimeDesignation};

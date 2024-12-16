@@ -1,11 +1,10 @@
 use alloc::{borrow::Cow, string::ToString, vec::Vec};
-use core::fmt::{self, Display, Write};
+use core::fmt::Write;
 
 use crate::{
 	Element, Serialize, SerializeOptions, XmlWriter,
-	unit::{Decibels, TimeDesignation},
-	util,
-	xml::TrustedNoEscape
+	unit::{Decibels, SpeedFormatter, TimeDesignation},
+	util
 };
 
 /// Specify repeating an [`Audio`] element's playback for a certain number of times, or for a determined duration.
@@ -289,11 +288,3 @@ impl<'s> Serialize for Audio<'s> {
 pub fn audio<'s>(src: impl Into<Cow<'s, str>>) -> Audio<'s> {
 	Audio::new(src)
 }
-
-struct SpeedFormatter(f32);
-impl Display for SpeedFormatter {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_fmt(format_args!("{}%", self.0 * 100.))
-	}
-}
-impl TrustedNoEscape for SpeedFormatter {}

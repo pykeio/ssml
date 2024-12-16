@@ -1,4 +1,4 @@
-use alloc::{borrow::Cow, string::ToString};
+use alloc::{borrow::Cow, string::ToString, vec::Vec};
 use core::{
 	fmt::Write,
 	ops::{Add, AddAssign}
@@ -54,6 +54,10 @@ impl<'s> Lang<'s> {
 
 	pub fn set_failure_behavior(&mut self, behavior: LangFailure) {
 		self.failure_behavior = Some(behavior);
+	}
+
+	pub fn take_failure_behavior(&mut self) -> Option<LangFailure> {
+		self.failure_behavior.take()
 	}
 
 	pub fn children(&self) -> &[Element<'s>] {

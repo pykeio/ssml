@@ -45,6 +45,7 @@ mod group;
 mod lang;
 mod mark;
 pub mod mstts;
+mod prosody;
 mod say_as;
 mod speak;
 mod text;
@@ -62,11 +63,12 @@ pub use self::{
 	emphasis::{Emphasis, EmphasisLevel, emphasis},
 	error::{Error, Result},
 	group::{Group, group},
+	lang::{Lang, lang},
 	mark::{Mark, mark},
+	prosody::{Prosody, ProsodyContour, ProsodyControl, ProsodyPitch, ProsodyRate, ProsodyVolume, prosody},
 	say_as::{DateFormat, SayAs, SpeechFormat, say_as},
 	speak::{Speak, speak},
 	text::{Text, text},
-	lang::{Lang, lang},
 	unit::{Decibels, DecibelsError, TimeDesignation, TimeDesignationError},
 	voice::{Voice, VoiceConfig, VoiceGender, voice},
 	xml::{EscapedDisplay, XmlWriter}

@@ -1,4 +1,4 @@
-use crate::{Audio, Break, CustomElement, Element, Emphasis, Lang, Mark, Meta, SayAs, Speak, Text, Voice, mstts};
+use crate::{Audio, Break, CustomElement, Element, Emphasis, Lang, Mark, Meta, Prosody, SayAs, Speak, Text, Voice, mstts};
 
 pub trait VisitMut<'s> {
 	fn visit_speak_mut(&mut self, node: &'s mut Speak) {
@@ -39,6 +39,10 @@ pub trait VisitMut<'s> {
 
 	fn visit_lang_mut(&mut self, node: &'s mut Lang) {
 		self::visit_lang_mut(self, node)
+	}
+
+	fn visit_prosody_mut(&mut self, node: &'s mut Prosody) {
+		self::visit_prosody_mut(self, node)
 	}
 
 	fn visit_custom_mut(&mut self, node: &'s mut CustomElement) {
@@ -92,6 +96,12 @@ pub fn visit_lang_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut Lan
 	}
 }
 
+pub fn visit_prosody_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut Prosody) {
+	for node in node.children_mut() {
+		v.visit_element_mut(node);
+	}
+}
+
 pub fn visit_custom_mut<'s, V: VisitMut<'s> + ?Sized>(_v: &mut V, _node: &'s mut CustomElement) {}
 
 pub fn visit_mstts_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut mstts::Element) {
@@ -117,6 +127,7 @@ pub fn visit_element_mut<'s, V: VisitMut<'s> + ?Sized>(v: &mut V, node: &'s mut 
 		Element::Mark(node) => visit_mark_mut(v, node),
 		Element::SayAs(node) => visit_say_as_mut(v, node),
 		Element::Lang(node) => visit_lang_mut(v, node),
+		Element::Prosody(node) => visit_prosody_mut(v, node),
 		Element::FlavorMSTTS(node) => visit_mstts_element_mut(v, node),
 		Element::Custom(node) => visit_custom_mut(v, node),
 		Element::Group(node) => {
