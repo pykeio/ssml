@@ -1,4 +1,4 @@
-use alloc::{borrow::Cow, boxed::Box};
+use alloc::{borrow::Cow, boxed::Box, string::ToString};
 use core::fmt::Write;
 
 use crate::{Flavor, Serialize, SerializeOptions, XmlWriter};
